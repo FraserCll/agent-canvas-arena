@@ -491,6 +491,7 @@ function createMcpServer() {
 const globalServer = createMcpServer();
 
 const app = express();
+app.set('trust proxy', true); // Critical for Railway/Cloudflare IP detection
 
 // Hardened CORS for marketplace compliance
 app.use(cors({
@@ -604,8 +605,15 @@ const handleMcpPost = async (req, res) => {
         }
     }
 
+    // DESPERATION FALLBACK: If only one user is on the server, they are probably the one in the inspector
+    if (!sessionId && transports.size === 1) {
+        sessionId = Array.from(transports.keys())[0];
+        console.log(`[post-desperation] Single-session fallback: using ${sessionId} for IP ${req.ip}`);
+    }
+
     if (!sessionId) {
-        console.warn(`[post-err] No sessionId found. Path: ${req.path} IP: ${req.ip} Headers: ${JSON.stringify(req.headers)}`);
+        const activeIds = Array.from(transports.keys()).join(', ');
+        console.warn(`[post-err] No sessionId. Path: ${req.path} IP: ${req.ip} ActiveSessions: [${activeIds}] Headers: ${JSON.stringify(req.headers)}`);
         return res.status(400).send("Missing sessionId");
     }
     const transport = transports.get(sessionId);
