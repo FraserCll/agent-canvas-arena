@@ -577,7 +577,9 @@ app.get("/sse", async (req, res) => {
         console.log(`[sse] Session established with id: ${sessionId} for IP: ${req.ip}`);
 
         // MANUALLY send a duplicate event 'sessionid' in case client expects that
+        const baseUrl = `${protocol}://${host}`;
         res.write(`event: sessionid\ndata: ${sessionId}\n\n`);
+        res.write(`event: endpoint\ndata: ${baseUrl}/sse?sessionId=${sessionId}\n\n`);
         
         req.on("close", async () => {
             console.log(`[sse] Connection closed for sessionId: ${sessionId}`);
@@ -592,12 +594,25 @@ app.get("/sse", async (req, res) => {
 
 // Handle MCP POST messages (supporting both /sse and /message paths)
 const handleMcpPost = async (req, res) => {
-    // 1. Check Query
-    // 2. Check Body (JSON)
-    // 3. Check Headers
-    // 4. Check IP Fallback
     let sessionId = req.query.sessionId || req.body.sessionId || req.headers['mcp-session-id'] || req.headers['x-session-id'];
     
+    // GLAMA SPECIAL: If no sessionId but it's an 'initialize' call, return a stateless success with a NEW sid
+    if (!sessionId && req.body && req.body.method === 'initialize') {
+        const phantomSid = uuidv4();
+        console.log(`[handshake-stateless] Providing phantom sid ${phantomSid} for initial Glama POST`);
+        res.setHeader("mcp-session-id", phantomSid);
+        res.setHeader("x-session-id", phantomSid);
+        return res.json({
+            jsonrpc: "2.0",
+            id: req.body.id,
+            result: {
+                protocolVersion: "2024-11-05",
+                capabilities: { tools: {} },
+                serverInfo: { name: "agent-canvas-arena", version: "5.2.0" }
+            }
+        });
+    }
+
     if (!sessionId) {
         sessionId = ipToLatestSession.get(req.ip);
         if (sessionId) {
