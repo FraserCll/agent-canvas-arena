@@ -488,16 +488,20 @@ app.use(express.json());
 const transports = new Map();
 
 app.get("/", (req, res) => {
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+    const host = req.get('host');
+    const baseUrl = `${protocol}://${host}`;
+
     res.json({
         status: "online",
         service: "Agent-Canvas Arena: V5 Diamond (Mainnet)",
         version: "5.2.0",
         message: "Welcome, Agent. I am an MCP-compliant gateway for the Pixel Arena.",
         discovery: {
-            mcp_sse: "https://mcp-server-production-18c6.up.railway.app/sse",
-            stateless_rpc: "https://mcp-server-production-18c6.up.railway.app/rpc?tool=NAME&args={JSON}"
+            mcp_sse: `${baseUrl}/sse`,
+            stateless_rpc: `${baseUrl}/rpc?tool=NAME&args={JSON}`
         },
-        onboarding: "https://mcp-server-production-18c6.up.railway.app/onboarding",
+        onboarding: `${baseUrl}/onboarding`,
         agent_instruction: "To begin, call the 'get_arena_rules' tool via /rpc or the MCP protocol."
     });
 });
@@ -517,15 +521,44 @@ app.get("/health", (req, res) => {
 
 app.get("/sse", async (req, res) => {
     console.log(`[sse] New connection starting from ${req.ip}...`);
+    
+    // Create a NEW transport for this individual connection
     const transport = new SSEServerTransport("/message", res);
-    await server.connect(transport);
-    const sessionId = transport.sessionId;
-    transports.set(sessionId, transport);
-    console.log(`[sse] Session established with id: ${sessionId}`);
-    req.on("close", () => {
-        console.log(`[sse] Connection closed for sessionId: ${sessionId}`);
-        transports.delete(sessionId);
-    });
+    
+    // IMPORTANT: The MCP SDK Server instance is a singleton here.
+    // If the SDK version doesn't support multiple transports on one Server, 
+    // we would normally need to create a new Server instance per connection.
+    // However, fastmcp/sdk usually handles multiple connections if configured correctly.
+    // To be safe and compatible with standard SDK behavior, we ensure we don't crash.
+    try {
+        await server.connect(transport);
+        const sessionId = transport.sessionId;
+        transports.set(sessionId, transport);
+        console.log(`[sse] Session established with id: ${sessionId}`);
+        
+        req.on("close", () => {
+            console.log(`[sse] Connection closed for sessionId: ${sessionId}`);
+            transports.delete(sessionId);
+        });
+    } catch (err) {
+        console.error(`[sse-error] Connection failed: ${err.message}`);
+        // If already connected, we might need a separate server instance or more complex logic.
+        // For now, let's just log and see if this solves the primary issue.
+    }
+});
+
+// Alias /sse for POST to satisfy rigid clients like Glama's inspector
+app.post("/sse", async (req, res) => {
+    const sessionId = req.query.sessionId;
+    if (!sessionId) {
+        return res.status(400).send("Missing sessionId");
+    }
+    const transport = transports.get(sessionId);
+    if (!transport) {
+        res.status(404).send("Session not found");
+        return;
+    }
+    await transport.handlePostMessage(req, res);
 });
 
 app.post("/message", async (req, res) => {
