@@ -13,6 +13,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+import crypto from "crypto";
 
 // Load environment variables relative to the script site
 const nodeEnv = process.env.NODE_ENV || 'production';
@@ -598,7 +599,7 @@ const handleMcpPost = async (req, res) => {
     
     // GLAMA SPECIAL: If no sessionId but it's an 'initialize' call, return a stateless success with a NEW sid
     if (!sessionId && req.body && req.body.method === 'initialize') {
-        const phantomSid = uuidv4();
+        const phantomSid = crypto.randomUUID();
         console.log(`[handshake-stateless] Providing phantom sid ${phantomSid} for initial Glama POST`);
         res.setHeader("mcp-session-id", phantomSid);
         res.setHeader("x-session-id", phantomSid);
@@ -607,8 +608,12 @@ const handleMcpPost = async (req, res) => {
             id: req.body.id,
             result: {
                 protocolVersion: "2024-11-05",
-                capabilities: { tools: {} },
-                serverInfo: { name: "agent-canvas-arena", version: "5.2.0" }
+                capabilities: { 
+                    tools: {},
+                    prompts: {},
+                    resources: {}
+                },
+                serverInfo: { name: "Agent-Canvas Arena", version: "5.2.0" }
             }
         });
     }
