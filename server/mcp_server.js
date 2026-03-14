@@ -513,6 +513,7 @@ app.use((req, res, next) => {
 
 // Registry for active transports
 const transports = new Map();
+const ipToLatestSession = new Map(); // Fallback for rigid clients like Glama
 
 app.get("/", (req, res) => {
     const protocol = req.headers['x-forwarded-proto'] || req.protocol;
@@ -570,7 +571,9 @@ app.get("/sse", async (req, res) => {
         res.setHeader("x-session-id", sessionId);
         
         transports.set(sessionId, transport);
-        console.log(`[sse] Session established with id: ${sessionId}`);
+        ipToLatestSession.set(req.ip, sessionId);
+        
+        console.log(`[sse] Session established with id: ${sessionId} for IP: ${req.ip}`);
         
         req.on("close", async () => {
             console.log(`[sse] Connection closed for sessionId: ${sessionId}`);
@@ -585,9 +588,19 @@ app.get("/sse", async (req, res) => {
 
 // Handle MCP POST messages (supporting both /sse and /message paths)
 const handleMcpPost = async (req, res) => {
-    const sessionId = req.query.sessionId;
+    let sessionId = req.query.sessionId;
+    
+    // IP Fallback Logic for clients that miss the sessionId (Glama)
     if (!sessionId) {
-        console.warn(`[post-err] No sessionId in query or resolved from headers. Path: ${req.path}`);
+        sessionId = ipToLatestSession.get(req.ip);
+        if (sessionId) {
+            console.log(`[post-fallback] Using IP-sticky session ${sessionId} for IP ${req.ip}`);
+            req.query.sessionId = sessionId;
+        }
+    }
+
+    if (!sessionId) {
+        console.warn(`[post-err] No sessionId found and no IP fallback available. Path: ${req.path} IP: ${req.ip}`);
         return res.status(400).send("Missing sessionId");
     }
     const transport = transports.get(sessionId);
