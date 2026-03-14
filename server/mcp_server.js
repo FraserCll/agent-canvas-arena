@@ -535,9 +535,14 @@ app.get("/sse", async (req, res) => {
     // 1. Create a unique server instance for THIS connection
     const sessionServer = createMcpServer();
     
-    // 2. Create the transport
-    // We point to /message which is our dedicated POST handler
-    const transport = new SSEServerTransport("/message", res);
+    // 2. Create the transport with an ABSOLUTE URL for the message endpoint
+    // This helps proxies and rigid clients like Glama correctly identify the POST target.
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+    const host = req.get('host');
+    const messageUrl = `${protocol}://${host}/message`;
+    
+    console.log(`[sse] Using message endpoint: ${messageUrl}`);
+    const transport = new SSEServerTransport(messageUrl, res);
     
     try {
         await sessionServer.connect(transport);
