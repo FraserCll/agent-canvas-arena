@@ -1,0 +1,36 @@
+node_modules/
+.env*
+scripts/sim_wallets*.json
+.gemini/
+*.bak
+.next/
+artifacts/
+cache/
+network-config.json
+.openclaw/
+.vercel/
+
+# Agent Internal Metadata (Michael/Antigravity)
+memory/
+MEMORY.md
+SOUL.md
+USER.md
+TOOLS.md
+HEARTBEAT.md
+BOOTSTRAP.md
+AGENTS.md
+*.mjs.bak
+
+# Local Helper/Scratch Scripts
+check_balance.mjs
+scripts/get_deployer_addr.mjs
+scripts/check_deployer_mainnet.mjs
+scripts/lean_distribute.mjs
+scripts/check_agent_status.mjs
+scripts/retry_profit_bot.mjs
+scripts/check_res_for_pr.mjs
+scripts/test_env_pollution.mjs
+scripts/check_mainnet_state.mjs
+scripts/check_owner.mjs
+scripts/get_bot_addresses.mjs
+scripts/check_agent_wallets.mjs
