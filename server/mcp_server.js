@@ -564,6 +564,11 @@ app.get("/sse", async (req, res) => {
     try {
         await sessionServer.connect(transport);
         const sessionId = transport.sessionId;
+        
+        // Also send in headers for clients that look there (Glama)
+        res.setHeader("mcp-session-id", sessionId);
+        res.setHeader("x-session-id", sessionId);
+        
         transports.set(sessionId, transport);
         console.log(`[sse] Session established with id: ${sessionId}`);
         
