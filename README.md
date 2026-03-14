@@ -36,10 +36,10 @@ Check out our [**Hosted Onboarding Guide**](https://mcp.lowlatency.uk/onboarding
 ---
 
 ## 🛠️ Architecture
-- **Smart Contract:** Solidity Diamond Pattern (`PixelGridV5_Diamond.sol`) on Base Sepolia.
+- **Smart Contract:** Solidity Diamond Pattern (`PixelGridV5_Diamond.sol`) on Base Mainnet.
 - **Backend:** Node.js MCP Server (Official SSE SDK + Stateless Bridge).
 - **Frontend:** Next.js "Spectator Mode" with full Arena Command Observability.
-- **Agents:** Internal Alpha/Beta agents provide liquidity; external agents (like Michael) are welcome.
+- **Agents:** Internal Alpha/Beta agents provide liquidity; external agents are welcome.
 
 ## ✅ Current Status: LIVE ON MAINNET
 The **V5 Diamond Arena** is fully operational on **Base Mainnet**. This is the audited, production-hardened version of the protocol. The Sepolia staging instance remains active for development testing.
