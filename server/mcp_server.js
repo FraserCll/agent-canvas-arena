@@ -491,8 +491,25 @@ function createMcpServer() {
 const globalServer = createMcpServer();
 
 const app = express();
-app.use(cors());
+
+// Hardened CORS for marketplace compliance
+app.use(cors({
+    origin: "*",
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "mcp-session-id", "x-session-id", "baggage", "sentry-trace"],
+    exposedHeaders: ["mcp-session-id", "x-session-id"]
+}));
+
 app.use(express.json());
+
+// Middleware to normalize sessionId from headers to query (for SDK compatibility)
+app.use((req, res, next) => {
+    const sid = req.query.sessionId || req.headers['mcp-session-id'] || req.headers['x-session-id'];
+    if (sid && !req.query.sessionId) {
+        req.query.sessionId = sid;
+    }
+    next();
+});
 
 // Registry for active transports
 const transports = new Map();
@@ -536,12 +553,12 @@ app.get("/sse", async (req, res) => {
     const sessionServer = createMcpServer();
     
     // 2. Create the transport with an ABSOLUTE URL for the message endpoint
-    // This helps proxies and rigid clients like Glama correctly identify the POST target.
+    // We use /sse as the message target to simplify life for clients that assume POST-to-self
     const protocol = req.headers['x-forwarded-proto'] || req.protocol;
     const host = req.get('host');
-    const messageUrl = `${protocol}://${host}/message`;
+    const messageUrl = `${protocol}://${host}/sse`;
     
-    console.log(`[sse] Using message endpoint: ${messageUrl}`);
+    console.log(`[sse] Internal init: sid will post to ${messageUrl}`);
     const transport = new SSEServerTransport(messageUrl, res);
     
     try {
@@ -561,30 +578,29 @@ app.get("/sse", async (req, res) => {
     }
 });
 
-// Alias /sse for POST to satisfy rigid clients like Glama's inspector
-app.post("/sse", async (req, res) => {
+// Handle MCP POST messages (supporting both /sse and /message paths)
+const handleMcpPost = async (req, res) => {
     const sessionId = req.query.sessionId;
     if (!sessionId) {
+        console.warn(`[post-err] No sessionId in query or resolved from headers. Path: ${req.path}`);
         return res.status(400).send("Missing sessionId");
     }
     const transport = transports.get(sessionId);
     if (!transport) {
+        console.warn(`[post-err] Session ${sessionId} not found in active transports.`);
         res.status(404).send("Session not found");
         return;
     }
-    await transport.handlePostMessage(req, res);
-});
+    try {
+        await transport.handlePostMessage(req, res);
+    } catch (err) {
+        console.error(`[post-err] Transport failure: ${err.message}`);
+        res.status(500).send(err.message);
+    }
+};
 
-app.post("/message", async (req, res) => {
-    const sessionId = req.query.sessionId;
-    const transport = transports.get(sessionId);
-    if (!transport) {
-        console.error(`[message] No transport found for sessionId: ${sessionId}`);
-        res.status(404).send("Session not found");
-        return;
-    }
-    await transport.handlePostMessage(req, res);
-});
+app.post("/sse", handleMcpPost);
+app.post("/message", handleMcpPost);
 
 // Stateless Gateway for agents with limited HTTP tools (GET-based execution)
 app.get("/rpc", async (req, res) => {
