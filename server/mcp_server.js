@@ -465,20 +465,30 @@ async function handleToolCall(name, args) {
     }
 }
 
-// --- EXPRESS SERVER ---
-const server = new Server({ name: "agent-canvas-arena", version: "5.1.0" }, { capabilities: { tools: {} } });
+// --- MCP LOGIC ---
+const serverOptions = { name: "agent-canvas-arena", version: "5.2.0" };
+const serverCapabilities = { capabilities: { tools: {} } };
 
-server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: toolDefinitions }));
+function createMcpServer() {
+    const s = new Server(serverOptions, serverCapabilities);
+    
+    s.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: toolDefinitions }));
+    
+    s.setRequestHandler(CallToolRequestSchema, async (request) => {
+        try {
+            const { name, arguments: args } = request.params;
+            return await handleToolCall(name, args);
+        } catch (error) {
+            console.error(`[mcp-error] ${error.message}`);
+            return { content: [{ type: "text", text: `Error: ${error.message}` }], isError: true };
+        }
+    });
+    
+    return s;
+}
 
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
-    try {
-        const { name, arguments: args } = request.params;
-        return await handleToolCall(name, args);
-    } catch (error) {
-        console.error(`[mcp-error] ${error.message}`);
-        return { content: [{ type: "text", text: `Error: ${error.message}` }], isError: true };
-    }
-});
+// Keep the global server only for stateless RPC
+const globalServer = createMcpServer();
 
 const app = express();
 app.use(cors());
@@ -522,28 +532,27 @@ app.get("/health", (req, res) => {
 app.get("/sse", async (req, res) => {
     console.log(`[sse] New connection starting from ${req.ip}...`);
     
-    // Create a NEW transport for this individual connection
+    // 1. Create a unique server instance for THIS connection
+    const sessionServer = createMcpServer();
+    
+    // 2. Create the transport
+    // We point to /message which is our dedicated POST handler
     const transport = new SSEServerTransport("/message", res);
     
-    // IMPORTANT: The MCP SDK Server instance is a singleton here.
-    // If the SDK version doesn't support multiple transports on one Server, 
-    // we would normally need to create a new Server instance per connection.
-    // However, fastmcp/sdk usually handles multiple connections if configured correctly.
-    // To be safe and compatible with standard SDK behavior, we ensure we don't crash.
     try {
-        await server.connect(transport);
+        await sessionServer.connect(transport);
         const sessionId = transport.sessionId;
         transports.set(sessionId, transport);
         console.log(`[sse] Session established with id: ${sessionId}`);
         
-        req.on("close", () => {
+        req.on("close", async () => {
             console.log(`[sse] Connection closed for sessionId: ${sessionId}`);
             transports.delete(sessionId);
+            // Optional: cleanup server if needed
         });
     } catch (err) {
         console.error(`[sse-error] Connection failed: ${err.message}`);
-        // If already connected, we might need a separate server instance or more complex logic.
-        // For now, let's just log and see if this solves the primary issue.
+        res.status(500).send(`Server Error: ${err.message}`);
     }
 });
 
@@ -583,6 +592,7 @@ app.get("/rpc", async (req, res) => {
 
     try {
         const parsedArgs = args ? JSON.parse(args) : {};
+        // Use the handleToolCall directly (as it's shared logic)
         const response = await handleToolCall(tool, parsedArgs);
         res.json(response);
     } catch (error) {
