@@ -574,6 +574,9 @@ app.get("/sse", async (req, res) => {
         ipToLatestSession.set(req.ip, sessionId);
         
         console.log(`[sse] Session established with id: ${sessionId} for IP: ${req.ip}`);
+
+        // MANUALLY send a duplicate event 'sessionid' in case client expects that
+        res.write(`event: sessionid\ndata: ${sessionId}\n\n`);
         
         req.on("close", async () => {
             console.log(`[sse] Connection closed for sessionId: ${sessionId}`);
@@ -588,19 +591,21 @@ app.get("/sse", async (req, res) => {
 
 // Handle MCP POST messages (supporting both /sse and /message paths)
 const handleMcpPost = async (req, res) => {
-    let sessionId = req.query.sessionId;
+    // 1. Check Query
+    // 2. Check Body (JSON)
+    // 3. Check Headers
+    // 4. Check IP Fallback
+    let sessionId = req.query.sessionId || req.body.sessionId || req.headers['mcp-session-id'] || req.headers['x-session-id'];
     
-    // IP Fallback Logic for clients that miss the sessionId (Glama)
     if (!sessionId) {
         sessionId = ipToLatestSession.get(req.ip);
         if (sessionId) {
             console.log(`[post-fallback] Using IP-sticky session ${sessionId} for IP ${req.ip}`);
-            req.query.sessionId = sessionId;
         }
     }
 
     if (!sessionId) {
-        console.warn(`[post-err] No sessionId found and no IP fallback available. Path: ${req.path} IP: ${req.ip}`);
+        console.warn(`[post-err] No sessionId found. Path: ${req.path} IP: ${req.ip} Headers: ${JSON.stringify(req.headers)}`);
         return res.status(400).send("Missing sessionId");
     }
     const transport = transports.get(sessionId);
