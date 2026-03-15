@@ -631,6 +631,9 @@ const handleMcpPost = async (req, res) => {
         req.body.method === 'initialize' || 
         req.body.method === 'tools/list' || 
         req.body.method === 'list_tools' || 
+        req.body.method === 'prompts/list' ||
+        req.body.method === 'resources/list' ||
+        req.body.method === 'resources/templates/list' ||
         req.body.method === 'notifications/initialized' ||
         req.body.method === 'tools/call' || 
         req.body.method === 'call_tool'
