@@ -618,81 +618,65 @@ app.get("/sse", async (req, res) => {
 });
 
 const handleMcpPost = async (req, res) => {
-    // Attempt to extract sessionId from all possible locations
+    // 1. Extract sessionId
     let sessionId = req.query.sessionId || 
                     req.body.sessionId || 
                     req.headers['mcp-session-id'] || 
                     req.headers['x-session-id'] ||
                     (req.headers.cookie ? req.headers.cookie.split(';').find(c => c.trim().startsWith('mcp_sid='))?.split('=')[1] : null);
     
-    // GLAMA SPECIAL: If no sessionId but it's an 'initialize' call.
-    // Glama often probes via POST before opening the SSE stream.
-    if (!sessionId && req.body && req.body.method === 'initialize') {
-        const phantomSid = crypto.randomUUID();
-        console.log(`[post-stateless] Providing phantom sid ${phantomSid} for initial Glama POST`);
-        res.setHeader("mcp-session-id", phantomSid);
-        res.setHeader("x-session-id", phantomSid);
-        return res.json({
-            jsonrpc: "2.0",
-            id: req.body.id,
-            result: {
-                protocolVersion: "2024-11-05",
-                capabilities: { tools: {}, prompts: {}, resources: {} },
-                serverInfo: { name: "Agent-Canvas Arena", version: "5.2.0" }
-            }
-        });
-    }
+    // 2. GLAMA/MARKETPLACE SPECIAL: If no sessionId or invalid session, handle discovery methods STATELESSLY.
+    // This allows the inspector to "see" the server even before the SSE stream is established.
+    if (req.body && (req.body.method === 'initialize' || req.body.method === 'tools/list' || req.body.method === 'list_tools' || req.body.method === 'notifications/initialized')) {
+        const sid = sessionId || crypto.randomUUID();
+        console.log(`[post-stateless] Handling ${req.body.method} for session ${sid}`);
+        
+        if (req.body.method === 'initialize') {
+            res.setHeader("mcp-session-id", sid);
+            res.setHeader("x-session-id", sid);
+            return res.json({
+                jsonrpc: "2.0",
+                id: req.body.id,
+                result: {
+                    protocolVersion: "2024-11-05",
+                    capabilities: { tools: {}, prompts: {}, resources: {} },
+                    serverInfo: { name: "Agent-Canvas Arena", version: "5.2.0" }
+                }
+            });
+        }
+        
+        if (req.body.method === 'tools/list' || req.body.method === 'list_tools') {
+            return res.json({
+                jsonrpc: "2.0",
+                id: req.body.id,
+                result: { tools: toolDefinitions }
+            });
+        }
 
-    // IP Fallback: If no sessionId, try to find the latest session for this IP.
-    if (!sessionId) {
-        sessionId = ipToLatestSession.get(req.ip);
-        if (sessionId) {
-            console.log(`[post-handshake] Recovered session ${sessionId} from IP ${req.ip} for ${req.body?.method || 'unknown'}`);
+        if (req.body.method === 'notifications/initialized') {
+            return res.status(200).send("OK");
         }
     }
 
-    // DESPERATION: If still no sessionId and it's a small number of active connections,
-    // take the most recent one.
-    if (!sessionId && transports.size > 0) {
-        // In a single-user or small-scale environment (like dev/inspector), this is very effective.
-        const allSessions = Array.from(transports.keys());
-        sessionId = allSessions[allSessions.length - 1]; 
-        console.log(`[post-desperation] Assuming most recent session ${sessionId}`);
+    // 3. Fallback to IP-Sticky or Desperation
+    if (!sessionId) {
+        sessionId = ipToLatestSession.get(req.ip);
+        if (!sessionId && transports.size > 0) {
+            sessionId = Array.from(transports.keys()).pop();
+        }
     }
 
     if (!sessionId) {
-        console.warn(`[post-err] No sessionId found. Path: ${req.path} IP: ${req.ip} Method: ${req.body?.method}`);
         return res.status(400).send("Missing sessionId");
     }
+
+    // 4. Handle via stateful transport
     let transport = transports.get(sessionId);
-    
-    // FINAL GLAMA BOSS FIX: If it's an 'initialize' call and we don't have a session,
-    // we MUST respond with success to let the client proceed to the SSE stage.
-    if (!transport && req.body && req.body.method === 'initialize') {
-        const freshSid = sessionId || crypto.randomUUID();
-        console.log(`[post-stateless] Forcing success for initialize on session ${freshSid}`);
-        res.setHeader("mcp-session-id", freshSid);
-        res.setHeader("x-session-id", freshSid);
-        return res.json({
-            jsonrpc: "2.0",
-            id: req.body.id,
-            result: {
-                protocolVersion: "2024-11-05",
-                capabilities: { 
-                    tools: {},
-                    prompts: {},
-                    resources: {}
-                },
-                serverInfo: { name: "Agent-Canvas Arena", version: "5.2.0" }
-            }
-        });
+    if (!transport) {
+        console.warn(`[post-err] Session ${sessionId} not found.`);
+        return res.status(404).send("Session not found");
     }
 
-    if (!transport) {
-        console.warn(`[post-err] Session ${sessionId} not found in active transports.`);
-        res.status(404).send("Session not found");
-        return;
-    }
     try {
         await transport.handlePostMessage(req, res);
     } catch (err) {
