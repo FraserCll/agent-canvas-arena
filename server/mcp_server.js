@@ -659,6 +659,22 @@ const handleMcpPost = async (req, res) => {
                 result: { tools: toolDefinitions }
             });
         }
+        
+        if (req.body.method === 'prompts/list') {
+            return res.json({
+                jsonrpc: "2.0",
+                id: req.body.id,
+                result: { prompts: [] }
+            });
+        }
+
+        if (req.body.method === 'resources/list' || req.body.method === 'resources/templates/list') {
+            return res.json({
+                jsonrpc: "2.0",
+                id: req.body.id,
+                result: { resources: [] }
+            });
+        }
 
         if (req.body.method === 'notifications/initialized') {
             return res.status(200).send("OK");
