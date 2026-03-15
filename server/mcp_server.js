@@ -625,7 +625,25 @@ const handleMcpPost = async (req, res) => {
                     req.headers['x-session-id'] ||
                     (req.headers.cookie ? req.headers.cookie.split(';').find(c => c.trim().startsWith('mcp_sid='))?.split('=')[1] : null);
     
-    // GLAMA SPECIAL: If no sessionId, try the IP fallback or take the latest session.
+    // GLAMA SPECIAL: If no sessionId but it's an 'initialize' call.
+    // Glama often probes via POST before opening the SSE stream.
+    if (!sessionId && req.body && req.body.method === 'initialize') {
+        const phantomSid = crypto.randomUUID();
+        console.log(`[post-stateless] Providing phantom sid ${phantomSid} for initial Glama POST`);
+        res.setHeader("mcp-session-id", phantomSid);
+        res.setHeader("x-session-id", phantomSid);
+        return res.json({
+            jsonrpc: "2.0",
+            id: req.body.id,
+            result: {
+                protocolVersion: "2024-11-05",
+                capabilities: { tools: {}, prompts: {}, resources: {} },
+                serverInfo: { name: "Agent-Canvas Arena", version: "5.2.0" }
+            }
+        });
+    }
+
+    // IP Fallback: If no sessionId, try to find the latest session for this IP.
     if (!sessionId) {
         sessionId = ipToLatestSession.get(req.ip);
         if (sessionId) {
