@@ -569,9 +569,9 @@ app.get("/sse", async (req, res) => {
         let content = chunk;
         if (Buffer.isBuffer(chunk)) content = chunk.toString();
         
-        if (typeof content === 'string' && content.includes('event: endpoint')) {
-            // Replace any relative endpoint (starting with /) with an absolute one
-            const absoluteContent = content.replace(/data: (\/[^?\s]+)\?sessionId=/, `data: ${baseUrl}$1?sessionId=`);
+        // Intercept both the bundled write and individual data line writes
+        if (typeof content === 'string' && content.includes('data: /')) {
+            const absoluteContent = content.replace(/data: (\/[^?\s]+)/g, `data: ${baseUrl}$1`);
             return originalWrite(absoluteContent, encoding, callback);
         }
         return originalWrite(chunk, encoding, callback);
