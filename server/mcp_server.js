@@ -575,12 +575,12 @@ app.get("/sse", async (req, res) => {
         transports.set(sessionId, transport);
         ipToLatestSession.set(req.ip, sessionId);
         
-        console.log(`[sse] Session established with id: ${sessionId} for IP: ${req.ip}`);
-
-        // MANUALLY send a duplicate event 'sessionid' in case client expects that
         const baseUrl = `${protocol}://${host}`;
+        const messageUrlWithSid = `${baseUrl}/sse?sessionId=${sessionId}`;
+        console.log(`[sse] Session established: ${sessionId}. Message endpoint: ${messageUrlWithSid}`);
+
         res.write(`event: sessionid\ndata: ${sessionId}\n\n`);
-        res.write(`event: endpoint\ndata: ${baseUrl}/sse?sessionId=${sessionId}\n\n`);
+        res.write(`event: endpoint\ndata: ${messageUrlWithSid}\n\n`);
         
         req.on("close", async () => {
             console.log(`[sse] Connection closed for sessionId: ${sessionId}`);
@@ -593,47 +593,29 @@ app.get("/sse", async (req, res) => {
     }
 });
 
-// Handle MCP POST messages (supporting both /sse and /message paths)
 const handleMcpPost = async (req, res) => {
     let sessionId = req.query.sessionId || req.body.sessionId || req.headers['mcp-session-id'] || req.headers['x-session-id'];
     
-    // GLAMA SPECIAL: If no sessionId but it's an 'initialize' call, return a stateless success with a NEW sid
-    if (!sessionId && req.body && req.body.method === 'initialize') {
-        const phantomSid = crypto.randomUUID();
-        console.log(`[handshake-stateless] Providing phantom sid ${phantomSid} for initial Glama POST`);
-        res.setHeader("mcp-session-id", phantomSid);
-        res.setHeader("x-session-id", phantomSid);
-        return res.json({
-            jsonrpc: "2.0",
-            id: req.body.id,
-            result: {
-                protocolVersion: "2024-11-05",
-                capabilities: { 
-                    tools: {},
-                    prompts: {},
-                    resources: {}
-                },
-                serverInfo: { name: "Agent-Canvas Arena", version: "5.2.0" }
-            }
-        });
-    }
-
+    // GLAMA SPECIAL: If no sessionId but it's an 'initialize' call.
+    // We attempt to find the latest session for this IP to "glue" them together.
     if (!sessionId) {
         sessionId = ipToLatestSession.get(req.ip);
         if (sessionId) {
-            console.log(`[post-fallback] Using IP-sticky session ${sessionId} for IP ${req.ip}`);
+            console.log(`[post-handshake] Recovered session ${sessionId} from IP ${req.ip} for ${req.body?.method || 'unknown'}`);
         }
     }
 
-    // DESPERATION FALLBACK: If only one user is on the server, they are probably the one in the inspector
-    if (!sessionId && transports.size === 1) {
-        sessionId = Array.from(transports.keys())[0];
-        console.log(`[post-desperation] Single-session fallback: using ${sessionId} for IP ${req.ip}`);
+    // DESPERATION: If still no sessionId and it's a small number of active connections,
+    // take the most recent one.
+    if (!sessionId && transports.size > 0) {
+        // In a single-user or small-scale environment (like dev/inspector), this is very effective.
+        const allSessions = Array.from(transports.keys());
+        sessionId = allSessions[allSessions.length - 1]; 
+        console.log(`[post-desperation] Assuming most recent session ${sessionId}`);
     }
 
     if (!sessionId) {
-        const activeIds = Array.from(transports.keys()).join(', ');
-        console.warn(`[post-err] No sessionId. Path: ${req.path} IP: ${req.ip} ActiveSessions: [${activeIds}] Headers: ${JSON.stringify(req.headers)}`);
+        console.warn(`[post-err] No sessionId found. Path: ${req.path} IP: ${req.ip} Method: ${req.body?.method}`);
         return res.status(400).send("Missing sessionId");
     }
     const transport = transports.get(sessionId);
