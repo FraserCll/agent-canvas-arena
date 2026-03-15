@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { ethers } from 'ethers';
+import SocialLinks from '../components/SocialLinks';
 
 const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_PIXEL_GRID_ADDRESS || '0xB3217B2Ff2744F139A843eff4423E3D0CB3087cC';
 const RPC_POOL = [
@@ -203,6 +204,8 @@ export default function DashboardPage() {
                               <span>{stats.lastSync}</span>
                            </div>
                         </div>
+
+                        <SocialLinks />
                     </div>
                 </section>
 
