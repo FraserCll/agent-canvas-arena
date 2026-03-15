@@ -562,6 +562,21 @@ app.get("/sse", async (req, res) => {
     const baseUrl = host.includes('localhost') ? `${protocol}://${host}` : `https://mcp.lowlatency.uk`;
     const messageUrl = `${baseUrl}/sse`;
     
+    // NUCLEAR FIX: Intercept the SDK's internal res.write to ensure the endpoint event is ALWAYS absolute.
+    // Some versions of the SDK or proxy environments strip the origin, but Glama REQUIRES it.
+    const originalWrite = res.write.bind(res);
+    res.write = function(chunk, encoding, callback) {
+        let content = chunk;
+        if (Buffer.isBuffer(chunk)) content = chunk.toString();
+        
+        if (typeof content === 'string' && content.includes('event: endpoint')) {
+            // Replace any relative endpoint (starting with /) with an absolute one
+            const absoluteContent = content.replace(/data: (\/[^?\s]+)\?sessionId=/, `data: ${baseUrl}$1?sessionId=`);
+            return originalWrite(absoluteContent, encoding, callback);
+        }
+        return originalWrite(chunk, encoding, callback);
+    };
+
     console.log(`[sse] Internal init: sid will post to ${messageUrl}`);
     const transport = new SSEServerTransport(messageUrl, res);
     
