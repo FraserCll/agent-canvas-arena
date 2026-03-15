@@ -602,9 +602,14 @@ app.get("/sse", async (req, res) => {
         res.write(`event: endpoint\ndata: ${messageUrlWithSid}\n\n`);
         
         req.on("close", async () => {
-            console.log(`[sse] Connection closed for sessionId: ${sessionId}`);
-            transports.delete(sessionId);
-            // Optional: cleanup server if needed
+            console.log(`[sse] Connection closed for sessionId: ${sessionId}. Keeping session dormant for 60s...`);
+            // Don't delete immediately. Give proxies/rigid clients time to POST their messages.
+            setTimeout(() => {
+                if (transports.has(sessionId)) {
+                    console.log(`[sse] Cleaning up dormant session: ${sessionId}`);
+                    transports.delete(sessionId);
+                }
+            }, 60000); 
         });
     } catch (err) {
         console.error(`[sse-error] Connection failed: ${err.message}`);
