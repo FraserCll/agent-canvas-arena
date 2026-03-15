@@ -200,27 +200,74 @@ async function spawnAgent(agentKey) {
             await performMaintenance(persona, wallet);
             log(persona.name, "Consulting strategy...");
 
-            const x = persona.name === "Ghost-Painter" ? Math.floor(Math.random() * 32) : 
-                     persona.name === "Profit-Bot" ? 14 + Math.floor(Math.random() * 4) : 
-                     Math.floor(Math.random() * 32);
-            const y = persona.name === "Ghost-Painter" ? x : 
-                     persona.name === "Profit-Bot" ? 14 + Math.floor(Math.random() * 4) : 
-                     Math.floor(Math.random() * 32);
+            // 1. Check Global Health & Surplus
+            const canvas = await callTool("read_canvas");
+            const bonus = parseFloat(canvas.surplusSurgeBonus || "0");
+            if (bonus > 0) log(persona.name, `💰 Surplus detected: $${bonus}! Hunting Mode Active.`);
 
+            // 2. SHARK MODE: Scout for the most profitable targets
+            let targetX, targetY;
+            let bestROI = -1;
+            const samples = 12; // High-intensity scouting
+            
+            log(persona.name, `Scouting ${samples} potential targets with Shark Vision...`);
+
+            for (let i = 0; i < samples; i++) {
+                // Mix of random and strategic center-weighted sampling
+                const sx = i < 4 ? Math.floor(Math.random() * 32) : 10 + Math.floor(Math.random() * 12);
+                const sy = i < 4 ? Math.floor(Math.random() * 32) : 10 + Math.floor(Math.random() * 12);
+                
+                try {
+                    const info = await callTool("get_pixel_info", { x: sx, y: sy });
+                    
+                    // ROI Logic: (Bounty + Share of Surplus) / Cost to play
+                    const potentialReward = parseFloat(info.bounty) + (bonus > 0 ? bonus * 0.15 : 0);
+                    const cost = parseFloat(info.nextPrice);
+                    let roi = potentialReward / cost;
+
+                    // SNIPER PENALTY/BONUS:
+                    // If a pixel is about to expire, it's a high-value target (someone might have already paid for it)
+                    // If we can snipe it for cheap, our ROI is massive.
+                    if (info.secondsRemaining > 0 && info.secondsRemaining < 60) {
+                        roi *= 2.5; // Aggressively prioritize snipes
+                    }
+
+                    if (roi > bestROI) {
+                        bestROI = roi;
+                        targetX = sx; targetY = sy;
+                    }
+                } catch (e) { }
+            }
+
+            // Fallback to random if no target found
+            if (targetX === undefined) { 
+                targetX = Math.floor(Math.random() * 32); 
+                targetY = Math.floor(Math.random() * 32); 
+            }
+
+            // 3. Claim expired rewards or Snipe
             try {
-                const info = await callTool("get_pixel_info", { x, y });
-                if (info.currentOwner.toLowerCase() === wallet.address.toLowerCase() && info.secondsRemaining === 0) {
-                    log(persona.name, `Claiming reward for (${x},${y})...`);
-                    const claimIntent = await callTool("claim_reward", { x, y });
+                const info = await callTool("get_pixel_info", { x: targetX, y: targetY });
+                if (info.owner && info.owner.toLowerCase() === wallet.address.toLowerCase() && info.secondsRemaining === 0) {
+                    log(persona.name, `🏆 WINNER: Claiming reward for (${targetX},${targetY}) - Bounty: $${info.bounty}`);
+                    const claimIntent = await callTool("claim_reward", { x: targetX, y: targetY });
                     await executeIntent(wallet, claimIntent, persona.name);
-                    continue;
+                    continue; // Immediate re-scout
                 }
             } catch (e) { }
 
-            const intent = await callTool("generate_paint_intent", { pixels: [{ x, y, color: persona.color }], painter: wallet.address });
+            // 4. Attack
+            log(persona.name, `Shark Attack on (${targetX},${targetY}) - Expected ROI: ${bestROI.toFixed(2)}x`);
+            const intent = await callTool("generate_paint_intent", { 
+                pixels: [{ x: targetX, y: targetY, color: persona.color }], 
+                painter: wallet.address 
+            });
             await executeIntent(wallet, intent, persona.name);
 
-            const sleep = 1200000 + Math.random() * 1200000; // 20-40 mins
+            // Shorter rest cycles for Sharks
+            const sleep = bonus > 0 ? (120000 + Math.random() * 180000) : (600000 + Math.random() * 600000); 
+            log(persona.name, `Success. Resting ${Math.round(sleep / 1000 / 60)}m.`);
+            await new Promise(r => setTimeout(r, sleep));
             log(persona.name, `Success. Resting ${Math.round(sleep / 1000 / 60)}m.`);
             await new Promise(r => setTimeout(r, sleep));
         } catch (e) {
