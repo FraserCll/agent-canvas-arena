@@ -671,11 +671,19 @@ const handleMcpPost = async (req, res) => {
             });
         }
 
-        if (req.body.method === 'resources/list' || req.body.method === 'resources/templates/list') {
+        if (req.body.method === 'resources/list') {
             return res.json({
                 jsonrpc: "2.0",
                 id: req.body.id,
                 result: { resources: [] }
+            });
+        }
+
+        if (req.body.method === 'resources/templates/list') {
+            return res.json({
+                jsonrpc: "2.0",
+                id: req.body.id,
+                result: { resourceTemplates: [] }
             });
         }
 
