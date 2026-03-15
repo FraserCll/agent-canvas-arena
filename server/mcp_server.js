@@ -656,6 +656,25 @@ const handleMcpPost = async (req, res) => {
         if (req.body.method === 'notifications/initialized') {
             return res.status(200).send("OK");
         }
+
+        if (req.body.method === 'tools/call' || req.body.method === 'call_tool') {
+            const { name, arguments: toolArgs } = req.body.params;
+            console.log(`[post-stateless] Executing tool ${name} via bridge`);
+            try {
+                const result = await handleToolCall(name, toolArgs);
+                return res.json({
+                    jsonrpc: "2.0",
+                    id: req.body.id,
+                    result: result
+                });
+            } catch (err) {
+                return res.status(500).json({
+                    jsonrpc: "2.0",
+                    id: req.body.id,
+                    error: { code: -32603, message: err.message }
+                });
+            }
+        }
     }
 
     // 3. Fallback to IP-Sticky or Desperation
