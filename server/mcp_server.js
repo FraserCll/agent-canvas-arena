@@ -627,7 +627,14 @@ const handleMcpPost = async (req, res) => {
     
     // 2. GLAMA/MARKETPLACE SPECIAL: If no sessionId or invalid session, handle discovery methods STATELESSLY.
     // This allows the inspector to "see" the server even before the SSE stream is established.
-    if (req.body && (req.body.method === 'initialize' || req.body.method === 'tools/list' || req.body.method === 'list_tools' || req.body.method === 'notifications/initialized')) {
+    if (req.body && (
+        req.body.method === 'initialize' || 
+        req.body.method === 'tools/list' || 
+        req.body.method === 'list_tools' || 
+        req.body.method === 'notifications/initialized' ||
+        req.body.method === 'tools/call' || 
+        req.body.method === 'call_tool'
+    )) {
         const sid = sessionId || crypto.randomUUID();
         console.log(`[post-stateless] Handling ${req.body.method} for session ${sid}`);
         
