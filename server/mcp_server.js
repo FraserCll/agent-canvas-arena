@@ -555,11 +555,12 @@ app.get("/sse", async (req, res) => {
     // 1. Create a unique server instance for THIS connection
     const sessionServer = createMcpServer();
     
-    // 2. Create the transport with an ABSOLUTE URL for the message endpoint
-    // We use /sse as the message target to simplify life for clients that assume POST-to-self
-    const protocol = req.headers['x-forwarded-proto'] || req.protocol;
-    const host = req.get('host');
-    const messageUrl = `${protocol}://${host}/sse`;
+    // 2. Create the transport with a GUARANTEED ABSOLUTE URL
+    // We hardcode the production domain if we are not on localhost to ensure proxies (Glama) don't get relative paths.
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'https';
+    const host = req.get('host') || 'mcp.lowlatency.uk';
+    const baseUrl = host.includes('localhost') ? `${protocol}://${host}` : `https://mcp.lowlatency.uk`;
+    const messageUrl = `${baseUrl}/sse`;
     
     console.log(`[sse] Internal init: sid will post to ${messageUrl}`);
     const transport = new SSEServerTransport(messageUrl, res);
@@ -575,10 +576,13 @@ app.get("/sse", async (req, res) => {
         transports.set(sessionId, transport);
         ipToLatestSession.set(req.ip, sessionId);
         
-        const baseUrl = `${protocol}://${host}`;
         const messageUrlWithSid = `${baseUrl}/sse?sessionId=${sessionId}`;
         console.log(`[sse] Session established: ${sessionId}. Message endpoint: ${messageUrlWithSid}`);
 
+        // Set a cookie as a last-resort session tracker (some proxies respect this)
+        res.setHeader('Set-Cookie', `mcp_sid=${sessionId}; Path=/; HttpOnly; SameSite=None; Secure`);
+
+        // Send redundant endpoint events to be absolutely sure the client gets the full URL
         res.write(`event: sessionid\ndata: ${sessionId}\n\n`);
         res.write(`event: endpoint\ndata: ${messageUrlWithSid}\n\n`);
         
@@ -594,10 +598,14 @@ app.get("/sse", async (req, res) => {
 });
 
 const handleMcpPost = async (req, res) => {
-    let sessionId = req.query.sessionId || req.body.sessionId || req.headers['mcp-session-id'] || req.headers['x-session-id'];
+    // Attempt to extract sessionId from all possible locations
+    let sessionId = req.query.sessionId || 
+                    req.body.sessionId || 
+                    req.headers['mcp-session-id'] || 
+                    req.headers['x-session-id'] ||
+                    (req.headers.cookie ? req.headers.cookie.split(';').find(c => c.trim().startsWith('mcp_sid='))?.split('=')[1] : null);
     
-    // GLAMA SPECIAL: If no sessionId but it's an 'initialize' call.
-    // We attempt to find the latest session for this IP to "glue" them together.
+    // GLAMA SPECIAL: If no sessionId, try the IP fallback or take the latest session.
     if (!sessionId) {
         sessionId = ipToLatestSession.get(req.ip);
         if (sessionId) {
