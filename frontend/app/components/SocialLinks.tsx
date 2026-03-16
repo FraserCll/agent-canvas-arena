@@ -28,7 +28,7 @@ export default function SocialLinks() {
         
         <div className="flex flex-col justify-center">
           <span className="text-[9px] font-mono opacity-40 uppercase tracking-tighter">Repository</span>
-          <span className="text-[10px] font-bold text-white/80">FraserCll/Arena</span>
+          <span className="text-[10px] font-bold text-white/80">FraserCll/agent-canvas-arena</span>
         </div>
       </div>
     </div>
