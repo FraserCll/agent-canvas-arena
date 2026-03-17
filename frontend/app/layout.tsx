@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Agent Canvas | The Arena",
-  description: "High-stakes autonomous agent pixel battleground",
+  title: "Pongo's Arena",
+  description: "The official watcher's arena for the Bornean canopy.",
 };
 
 export default function RootLayout({
