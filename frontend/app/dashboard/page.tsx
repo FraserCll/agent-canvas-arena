@@ -102,66 +102,74 @@ export default function DashboardPage() {
     }, []);
 
     return (
-        <div className="min-h-screen relative bg-black text-white p-4 md:p-8 space-y-8 overflow-hidden">
-            {/* Background Decorative Element */}
-            <div className="absolute top-[-5%] right-[-5%] w-[30%] h-[30%] bg-[#B026FF] opacity-[0.03] blur-[100px] rounded-full pointer-events-none" />
+        <div className="min-h-screen relative p-4 md:p-8 space-y-12 overflow-hidden selection:bg-[#2B1E16] selection:text-[#E6E3D8]">
+            {/* Cinematic Background */}
+            <div 
+              className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat" 
+              style={{ backgroundImage: 'url("/bg-borneo.png")', filter: 'brightness(0.4)' }}
+            />
             
-            <header className="w-full max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center z-10 gap-4">
+            {/* Rain Effect */}
+            <div className="rain-overlay" />
+
+            {/* Header: The Sage's Archive */}
+            <header className="w-full max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-end z-10 gap-6 border-b border-[#E6E3D8]/10 pb-6 relative">
                 <div className="flex flex-col">
-                    <h1 className="text-3xl font-bold tracking-tighter text-white">
-                        COMMAND<span className="text-[#00D1FF]">DASHBOARD</span>
+                    <h1 className="text-4xl font-bold tracking-tight text-[#E6E3D8] font-serif uppercase">
+                        THE SAGE&apos;S <span className="opacity-40">ARCHIVE</span>
                     </h1>
-                    <p className="text-[10px] font-mono opacity-40 uppercase tracking-widest">
-                        Protocol v5.2 // Diamond Authority
+                    <p className="text-[10px] font-sans opacity-40 uppercase tracking-[0.4em] mt-2">
+                        Historical Logs // Sector (0,0) // Pongo&apos;s Records
                     </p>
                 </div>
                 <div className="flex gap-4">
-                  <a href="/" className="glass-container px-6 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest hover:neon-border-green transition-all">
-                    Terminal Exit
+                  <a href="/" className="slate-panel px-8 py-3 rounded border border-[#E6E3D8]/10 text-[10px] font-bold uppercase tracking-[0.3em] hover:bg-[#E6E3D8]/5 transition-all font-sans">
+                    Return to Arena
                   </a>
                 </div>
             </header>
 
-            <main className="max-w-6xl mx-auto space-y-8 z-10 relative">
+            <main className="max-w-6xl mx-auto space-y-12 z-10 relative">
                 
-                {/* Primary Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {/* Primary Stats Grid (Parchment Style) */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                   {[
-                    { label: 'Reservoir Pool', val: `$${stats.reservoir}`, sub: 'Min Floor: $25.00', color: 'text-white' },
-                    { label: 'Total Bounties', val: `$${stats.totalTileBounties}`, sub: 'Locked & Eligible', color: 'text-[#39FF14]' },
-                    { label: 'Protocol Rake', val: `$${stats.revenue}`, sub: '5% Commision', color: 'text-[#00D1FF]' },
-                    { label: 'Active Conflicts', val: stats.activeConflicts, sub: 'Members Engaged', color: 'text-white' },
+                    { label: 'Global Reservoir', val: `$${parseFloat(stats.reservoir).toFixed(2)}`, sub: 'Current Liquidity', color: 'text-[#1A2E1A]' },
+                    { label: 'Tile Bounties', val: `$${parseFloat(stats.totalTileBounties).toFixed(2)}`, sub: 'Active Rewards', color: 'text-[#1A2E1A]' },
+                    { label: 'Botanical Rake', val: `$${parseFloat(stats.revenue).toFixed(2)}`, sub: 'Observer Fee', color: 'text-[#1A2E1A]' },
+                    { label: 'Active Spirits', val: stats.activeConflicts, sub: 'Board Occupants', color: 'text-[#1A2E1A]' },
                   ].map((s, idx) => (
-                    <div key={idx} className="glass-container p-6 rounded-2xl border-white/5 space-y-1">
-                      <div className="text-[10px] opacity-40 uppercase font-mono tracking-widest">{s.label}</div>
-                      <div className={`text-3xl font-bold ${s.color}`}>{s.val}</div>
-                      <div className="text-[9px] opacity-20 uppercase font-mono">{s.sub}</div>
+                    <div key={idx} className="journal-entry space-y-2">
+                      <div className="text-[10px] opacity-60 uppercase font-sans tracking-[0.2em] font-bold">{s.label}</div>
+                      <div className={`text-3xl font-bold font-serif ${s.color}`}>{s.val}</div>
+                      <div className="h-px w-full bg-[#1A2E1A]/10 mt-2" />
+                      <div className="text-[9px] opacity-40 uppercase font-sans italic">{s.sub}</div>
                     </div>
                   ))}
                 </div>
 
-                {/* Logs & Payouts section */}
-                <section className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Live Paint Feed */}
-                    <div className="lg:col-span-2 space-y-4">
+                {/* Logs section: Slate Panels */}
+                <section className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+                    {/* Live Battle Feed */}
+                    <div className="lg:col-span-2 space-y-6">
                         <div className="flex items-center gap-4">
-                           <h2 className="text-xs font-bold tracking-[0.2em] uppercase opacity-60">Live Battle Feed</h2>
-                           <div className="h-px flex-1 bg-white/10" />
+                           <h2 className="text-[10px] font-bold tracking-[0.3em] uppercase opacity-40 font-sans">Field Transmissions</h2>
+                           <div className="h-px flex-1 bg-[#E6E3D8]/10" />
                         </div>
-                        <div className="glass-container rounded-2xl overflow-hidden neon-border-green/20">
-                          <div className="h-[500px] overflow-y-auto p-4 space-y-1 font-mono text-[11px]">
+                        <div className="slate-panel rounded-xl overflow-hidden shadow-2xl border border-white/5">
+                          <div className="h-[600px] overflow-y-auto p-6 space-y-0 text-[12px] font-sans">
                               {logs.length > 0 ? logs.map((log) => (
-                                  <div key={log.id} className="group flex items-center gap-4 hover:bg-white/5 p-2 rounded transition-colors border-b border-white/5">
-                                      <span className="opacity-20 text-[9px]">BLK:{log.block || '??'}</span>
-                                      <span className="text-[#39FF14] font-bold">SHA-256</span>
-                                      <span className="text-white opacity-80">{log.painter.slice(0, 10)}...</span>
-                                      <div className="h-1 w-1 rounded-full bg-white/20" />
-                                      <span className="opacity-60">PAINTED TILE #{log.tileIndex.padStart(4, '0')}</span>
-                                      <span className="ml-auto font-bold text-[#39FF14]">+${log.price}</span>
+                                  <div key={log.id} className="group flex items-center gap-6 hover:bg-[#E6E3D8]/5 p-3 transition-colors border-b border-[#E6E3D8]/5">
+                                      <span className="opacity-20 text-[9px] font-mono">#{log.block || '????'}</span>
+                                      <span className="text-[#E6E3D8] font-bold italic font-serif">Signal</span>
+                                      <span className="text-[#E6E3D8] opacity-60 truncate max-w-[100px]">{log.painter.slice(0, 10)}...</span>
+                                      <div className="h-1.5 w-1.5 rounded-full bg-[#E6E3D8]/10" />
+                                      <span className="opacity-40 uppercase tracking-widest text-[10px]">Altered Tile {log.tileIndex.padStart(4, '0')}</span>
+                                      <span className="ml-auto font-bold font-serif text-[#D9D2C5]">$ {parseFloat(log.price).toFixed(2)}</span>
                                   </div>
                               )) : (
-                                  <div className="flex items-center justify-center h-full opacity-20 italic">
-                                      Awaiting battle telemetry...
+                                  <div className="flex flex-col items-center justify-center h-full opacity-20 italic font-serif py-24">
+                                      <p>Listening for vibrations in the canopy...</p>
                                   </div>
                               )}
                           </div>
@@ -169,38 +177,43 @@ export default function DashboardPage() {
                     </div>
 
                     {/* Recent Payouts Feed */}
-                    <div className="space-y-4">
+                    <div className="space-y-8">
                         <div className="flex items-center gap-4">
-                           <h2 className="text-xs font-bold tracking-[0.2em] uppercase opacity-60">Recent Payouts</h2>
-                           <div className="h-px flex-1 bg-white/10" />
+                           <h2 className="text-[10px] font-bold tracking-[0.3em] uppercase opacity-40 font-sans">Bounty Distribution</h2>
+                           <div className="h-px flex-1 bg-[#E6E3D8]/10" />
                         </div>
-                        <div className="glass-container rounded-2xl p-4 bg-[#B026FF]/5 border-[#B026FF]/20 space-y-4 overflow-y-auto max-h-[500px]">
+                        
+                        <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
                             {payouts.length > 0 ? payouts.map((p) => (
-                                <div key={p.id} className="p-3 bg-white/5 rounded-xl border border-white/5 space-y-2">
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-white font-bold text-xs">{p.winner.slice(0, 12)}...</span>
-                                        <span className="text-[#39FF14] font-bold text-sm">+${p.total}</span>
+                                <div key={p.id} className="slate-panel p-5 rounded-lg border border-white/5 space-y-3 hover:translate-x-2 transition-transform">
+                                    <div className="flex justify-between items-start">
+                                        <div className="flex flex-col">
+                                            <span className="text-[9px] opacity-30 uppercase font-sans">Recipient</span>
+                                            <span className="text-[#E6E3D8] font-bold font-serif text-sm">{p.winner.slice(0, 16)}...</span>
+                                        </div>
+                                        <span className="text-[#D9D2C5] font-bold font-serif text-lg">$ {parseFloat(p.total).toFixed(2)}</span>
                                     </div>
-                                    <div className="flex justify-between text-[9px] font-mono uppercase opacity-40">
-                                        <span>Surplus Component</span>
+                                    <div className="flex justify-between text-[8px] font-sans uppercase opacity-30 tracking-widest border-t border-white/5 pt-2">
+                                        <span>Surplus Logic</span>
                                         <span>{p.bonus}</span>
                                     </div>
                                 </div>
                             )) : (
-                                <div className="opacity-20 text-xs italic text-center py-12 px-4 uppercase tracking-widest font-mono">
-                                    No victors identified in current epoch
+                                <div className="slate-panel p-12 text-center opacity-20 text-[10px] italic font-serif uppercase tracking-widest">
+                                    The spirits remain silent
                                 </div>
                             )}
                         </div>
                         
                         {/* Status Checkbox Meta */}
-                        <div className="glass-container p-4 rounded-xl border-white/5 space-y-2">
-                           <div className="flex justify-between text-[10px] font-mono uppercase">
-                              <span className="opacity-40">Contract Health</span>
-                              <span className={stats.healthy ? "text-[#39FF14]" : "text-red-500"}>{stats.healthy ? "SECURE" : "WARNING"}</span>
+                        <div className="journal-entry space-y-3 !bg-[#D9D2C5]/80 !text-[#1A2E1A]">
+                           <div className="flex justify-between text-[10px] font-sans font-bold uppercase tracking-widest">
+                              <span className="opacity-60">Observatory Health</span>
+                              <span className={stats.healthy ? "text-[#1A2E1A]" : "text-red-900"}>{stats.healthy ? "OPTIMAL" : "DISTURBED"}</span>
                            </div>
-                           <div className="flex justify-between text-[10px] font-mono uppercase">
-                              <span className="opacity-40">Last Telemetry</span>
+                           <div className="h-px w-full bg-[#1A2E1A]/10" />
+                           <div className="flex justify-between text-[10px] font-sans font-bold uppercase tracking-widest">
+                              <span className="opacity-60">Chronicle Sync</span>
                               <span>{stats.lastSync}</span>
                            </div>
                         </div>
@@ -209,9 +222,9 @@ export default function DashboardPage() {
                     </div>
                 </section>
 
-                <footer className="pt-8 border-t border-white/5 flex justify-between items-center text-[9px] font-mono opacity-20 uppercase tracking-[0.3em]">
-                   <div>System_Link: Stable</div>
-                   <div>Arena_v5_Diamond</div>
+                <footer className="pt-12 border-t border-[#E6E3D8]/10 flex justify-between items-center text-[9px] font-sans opacity-20 uppercase tracking-[0.5em]">
+                   <div>Archives_v5.2 // Stable_Link</div>
+                   <div>Pongo_Approved_Archive</div>
                 </footer>
             </main>
         </div>

@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;700&family=Public+Sans:wght@300;400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IM+Fell+DW+Pica:ital@0;1&family=Spectral:ital,wght@0,300;0,400;0,700;1,400&family=Public+Sans:wght@300;400;700&display=swap');
 
 :root {
   --deep-canopy: #1A2E1A;
@@ -15,14 +15,14 @@
 body {
   background-color: var(--deep-canopy);
   color: var(--bone-parchment);
-  font-family: 'Public Sans', sans-serif;
+  font-family: 'Spectral', serif;
   overflow-x: hidden;
   height: 100vh;
   width: 100vw;
 }
 
 h1, h2, h3, .font-serif {
-  font-family: 'Crimson Pro', serif;
+  font-family: 'IM Fell DW Pica', serif;
 }
 
 /* Tactile Panels */
