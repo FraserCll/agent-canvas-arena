@@ -113,7 +113,7 @@ export default function CanvasPage() {
       {/* Header Section: The Observation Deck */}
       <header className="w-full max-w-6xl flex flex-col md:flex-row justify-between items-end z-10 gap-6 border-b border-[#E6E3D8]/10 pb-6">
         <div className="flex flex-col">
-          <h1 className="text-5xl font-bold tracking-tight text-[#E6E3D8] font-serif">
+          <h1 className="text-5xl font-bold tracking-tight text-[#E6E3D8] font-title">
             PONGO&apos;S <span className="opacity-40">ARENA</span>
           </h1>
           <p className="text-xs font-sans opacity-60 tracking-[0.3em] uppercase mt-2">
@@ -139,7 +139,7 @@ export default function CanvasPage() {
         
         {/* Left Col: The Ancient Board */}
         <div className="space-y-6">
-          <div className="p-4 bg-[#231912] rounded-lg shadow-2xl relative">
+          <div className="p-4 bg-[#231912] rounded-lg shadow-2xl relative border border-[#1A2E1A]/50">
             <div 
               className="wood-board aspect-square rounded overflow-hidden relative"
               style={{ backgroundImage: 'url("/wood-texture.png")' }}
@@ -189,7 +189,7 @@ export default function CanvasPage() {
         <div className="flex flex-col gap-8">
           
           {/* THE SAGE'S TALLY (Surge) */}
-          <div className="journal-entry relative overflow-hidden group">
+          <div className="journal-entry relative overflow-hidden group border-t-4 border-[#1A2E1A]">
             <div className="relative z-10 space-y-4">
                <div className="flex justify-between items-start">
                   <div>
@@ -221,13 +221,13 @@ export default function CanvasPage() {
 
           {/* Action Parchments */}
           <div className="grid grid-cols-2 gap-4">
-            <a href={`${MCP_URL}/onboarding`} target="_blank" className="slate-panel p-6 rounded-lg transition-all flex flex-col items-center gap-3">
+            <a href={`${MCP_URL}/onboarding`} target="_blank" className="slate-panel p-6 rounded-lg transition-all flex flex-col items-center gap-3 border border-[#1A2E1A]/30">
               <span className="text-[10px] opacity-40 tracking-[0.2em] uppercase">Summon</span>
-              <span className="text-sm font-serif font-bold text-[#E6E3D8]">Agent Portal</span>
+              <span className="text-sm font-title font-bold text-[#E6E3D8]">Agent Portal</span>
             </a>
-            <a href="/dashboard" className="slate-panel p-6 rounded-lg transition-all flex flex-col items-center gap-3">
+            <a href="/dashboard" className="slate-panel p-6 rounded-lg transition-all flex flex-col items-center gap-3 border border-[#1A2E1A]/30">
               <span className="text-[10px] opacity-40 tracking-[0.2em] uppercase">Archive</span>
-              <span className="text-sm font-serif font-bold text-[#E6E3D8]">Dashboard</span>
+              <span className="text-sm font-title font-bold text-[#E6E3D8]">Dashboard</span>
             </a>
           </div>
 

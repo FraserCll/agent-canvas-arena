@@ -111,7 +111,7 @@ export default function DashboardPage() {
             {/* Header: The Sage's Archive */}
             <header className="w-full max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-end z-10 gap-6 border-b border-[#E6E3D8]/10 pb-6 relative">
                 <div className="flex flex-col">
-                    <h1 className="text-4xl font-bold tracking-tight text-[#E6E3D8] font-serif uppercase">
+                    <h1 className="text-4xl font-bold tracking-tight text-[#E6E3D8] font-title uppercase">
                         THE SAGE&apos;S <span className="opacity-40">ARCHIVE</span>
                     </h1>
                     <p className="text-[10px] font-sans opacity-40 uppercase tracking-[0.4em] mt-2">
@@ -119,7 +119,7 @@ export default function DashboardPage() {
                     </p>
                 </div>
                 <div className="flex gap-4">
-                  <a href="/" className="slate-panel px-8 py-3 rounded border border-[#E6E3D8]/10 text-[10px] font-bold uppercase tracking-[0.3em] hover:bg-[#E6E3D8]/5 transition-all font-sans">
+                  <a href="/" className="slate-panel px-8 py-3 rounded border border-[#1A2E1A]/40 text-[10px] font-bold uppercase tracking-[0.3em] hover:bg-[#1A2E1A]/10 transition-all font-sans text-white/80">
                     Return to Arena
                   </a>
                 </div>
@@ -135,9 +135,9 @@ export default function DashboardPage() {
                     { label: 'Botanical Rake', val: `$${parseFloat(stats.revenue).toFixed(2)}`, sub: 'Observer Fee', color: 'text-[#1A2E1A]' },
                     { label: 'Active Spirits', val: stats.activeConflicts, sub: 'Board Occupants', color: 'text-[#1A2E1A]' },
                   ].map((s, idx) => (
-                    <div key={idx} className="journal-entry space-y-2">
+                    <div key={idx} className="journal-entry space-y-2 border-t-2 border-[#1A2E1A]">
                       <div className="text-[10px] opacity-60 uppercase font-sans tracking-[0.2em] font-bold">{s.label}</div>
-                      <div className={`text-3xl font-bold font-serif ${s.color}`}>{s.val}</div>
+                      <div className={`text-3xl font-bold font-title ${s.color}`}>{s.val}</div>
                       <div className="h-px w-full bg-[#1A2E1A]/10 mt-2" />
                       <div className="text-[9px] opacity-40 uppercase font-sans italic">{s.sub}</div>
                     </div>

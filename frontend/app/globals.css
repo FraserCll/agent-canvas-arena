@@ -2,27 +2,33 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=IM+Fell+DW+Pica:ital@0;1&family=Spectral:ital,wght@0,300;0,400;0,700;1,400&family=Public+Sans:wght@300;400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Rubik+Distressed&family=Noto+Sans:ital,wght@0,300;0,400;0,700;1,400&family=IM+Fell+DW+Pica&display=swap');
 
 :root {
   --deep-canopy: #1A2E1A;
+  --forest-green: #243B24;
   --wet-bark: #2B1E16;
   --slate-rain: #4A5358;
   --bone-parchment: #E6E3D8;
   --mahogany: #3D2B1F;
-  --jungle-dark: #120F0D; /* Very dark brown requested */
+  --jungle-dark: #0D0B0A; /* Slightly darker brown */
 }
 
 body {
-  background-color: var(--jungle-dark);
+  background: linear-gradient(135deg, var(--jungle-dark) 0%, #1A2E1A 100%);
+  background-attachment: fixed;
   color: var(--bone-parchment);
-  font-family: 'Spectral', serif;
+  font-family: 'Noto Sans', sans-serif;
   overflow-x: hidden;
   height: 100vh;
   width: 100vw;
 }
 
-h1, h2, h3, .font-serif {
+h1, h2, h3, .font-title {
+  font-family: 'Rubik Distressed', cursive;
+}
+
+.font-serif {
   font-family: 'IM Fell DW Pica', serif;
 }
 
