@@ -127,6 +127,64 @@ export default function DashboardPage() {
 
             <main className="max-w-6xl mx-auto space-y-12 z-10 relative">
                 
+                {/* Surplus Surge Bait Meter */}
+                <div className="slate-panel p-8 rounded-2xl border border-[#E6E3D8]/10 space-y-6 relative overflow-hidden group">
+                  {/* Decorative background pulse if surplus exists */}
+                  {parseFloat(stats.reservoir) > 25 && (
+                    <div className="absolute inset-0 bg-yellow-500/5 animate-pulse pointer-events-none" />
+                  )}
+                  
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 relative z-10">
+                    <div className="space-y-1">
+                      <h2 className="text-[10px] font-bold tracking-[0.4em] uppercase text-[#D9D2C5] opacity-60">Surplus Surge Meter</h2>
+                      <div className="flex items-baseline gap-3">
+                        <span className="text-4xl font-bold font-title text-[#E6E3D8]">
+                          {parseFloat(stats.reservoir) > 25 ? "💰 BONUSES ACTIVE" : "🏮 BAITING"}
+                        </span>
+                        {parseFloat(stats.reservoir) > 25 && (
+                          <span className="text-xl font-mono text-yellow-500 animate-bounce">
+                            +${(Math.max(0, parseFloat(stats.reservoir) - 25) * 0.25).toFixed(4)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right font-mono text-[10px] space-y-1">
+                      <div className="opacity-40 uppercase">Global Reservoir Capacity</div>
+                      <div className="text-[#E6E3D8] font-bold">${parseFloat(stats.reservoir).toFixed(2)} / $25.00 FLOOR</div>
+                    </div>
+                  </div>
+
+                  {/* The Meter */}
+                  <div className="relative h-4 w-full bg-[#jungle-dark] rounded-full overflow-hidden border border-white/5 shadow-inner">
+                    {/* Progress to Floor */}
+                    <div 
+                      className="absolute left-0 top-0 h-full bg-gradient-to-r from-[#1A2E1A] to-[#E6E3D8]/20 transition-all duration-1000 ease-out"
+                      style={{ width: `${Math.min(100, (parseFloat(stats.reservoir) / 25) * 100)}%` }}
+                    />
+                    
+                    {/* Surplus Payout Zone (Gold Highlight) */}
+                    {parseFloat(stats.reservoir) > 25 && (
+                      <div 
+                        className="absolute top-0 h-full bg-gradient-to-r from-yellow-600 to-yellow-400 shadow-[0_0_20px_rgba(234,179,8,0.5)] animate-pulse"
+                        style={{ 
+                          left: '100%', 
+                          width: `${Math.min(100, ((parseFloat(stats.reservoir) - 25) / 25) * 100)}%`,
+                          marginLeft: '-100%' // Overlay logic
+                        }}
+                      />
+                    )}
+
+                    {/* Floor Marker */}
+                    <div className="absolute left-[100%] ml-[-2px] top-0 h-full w-1 bg-yellow-500 z-20 shadow-[0_0_10px_#EAB308]" title="The $25 Floor" />
+                  </div>
+
+                  <div className="flex justify-between text-[9px] font-mono opacity-40 uppercase tracking-widest pt-2">
+                    <span>Silt ($0)</span>
+                    <span className="text-yellow-500 font-bold">Surplus Threshold ($25)</span>
+                    <span>Flood Zone</span>
+                  </div>
+                </div>
+
                 {/* Primary Stats Grid (Parchment Style) */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                   {[
