@@ -123,13 +123,13 @@ export default function CanvasPage() {
         
         <div className="flex gap-4 items-center">
              <div className="flex flex-col text-right">
-                <span className="text-[10px] opacity-40 uppercase tracking-widest">Atmosphere</span>
-                <span className="text-xs font-serif italic text-[#D9D2C5]">Heavy Rain, High ROI</span>
+                <span className="text-[10px] opacity-40 uppercase tracking-widest font-mono">Atmosphere</span>
+                <span className="text-xs italic text-[#D9D2C5]">Heavy Rain, High ROI</span>
              </div>
              <div className="h-8 w-px bg-[#E6E3D8]/10" />
              <div className="flex flex-col text-right">
-                <span className="text-[10px] opacity-40 uppercase tracking-widest">Last Entry</span>
-                <span className="text-xs font-sans text-[#E6E3D8]">{lastUpdated || "Consulting the stars..."}</span>
+                <span className="text-[10px] opacity-40 uppercase tracking-widest font-mono">Last Entry</span>
+                <span className="text-xs text-[#E6E3D8] font-mono">{lastUpdated || "Consulting..."}</span>
              </div>
         </div>
       </header>
@@ -179,7 +179,7 @@ export default function CanvasPage() {
             <div className="absolute inset-0 pointer-events-none bg-gradient-to-tr from-black/40 via-transparent to-black/20" />
           </div>
           
-          <div className="flex justify-between items-center font-sans text-[10px] opacity-40 uppercase tracking-[0.2em]">
+          <div className="flex justify-between items-center text-[10px] opacity-40 uppercase tracking-[0.2em] font-mono">
             <span>Region: 1024_SQ_KM</span>
             <span>Active Spirits: {activeMembers}</span>
           </div>
@@ -194,7 +194,7 @@ export default function CanvasPage() {
                <div className="flex justify-between items-start">
                   <div>
                     <h3 className="text-[#2F2B26]/60 text-[10px] font-bold tracking-[0.2em] uppercase mb-1 font-sans">Global Reservoir Tally</h3>
-                    <div className="text-5xl font-bold font-serif text-[#1A2E1A] tracking-tighter">
+                    <div className="text-5xl font-bold text-[#1A2E1A] tracking-tighter font-mono">
                       ${prizePool.toFixed(2)}
                     </div>
                   </div>
@@ -204,16 +204,16 @@ export default function CanvasPage() {
                   <div className="h-px w-full bg-[#1A2E1A]/10" />
                   <div className="flex justify-between items-end">
                     <div className="flex flex-col">
-                        <span className="text-[10px] opacity-50 uppercase font-sans">Surplus Surplus</span>
-                        <span className="text-xl font-serif text-[#8B4513] font-bold">+ ${surgeBonus.toFixed(4)}</span>
+                        <span className="text-[10px] opacity-50 uppercase">Surplus Surplus</span>
+                        <span className="text-xl text-[#8B4513] font-bold font-mono">+ ${surgeBonus.toFixed(4)}</span>
                     </div>
-                    <div className="text-right italic font-serif text-sm opacity-60">
+                    <div className="text-right italic text-sm opacity-60">
                         {surplus > 0 ? "The canopy is fertile." : "The floor remains firm."}
                     </div>
                   </div>
                </div>
 
-               <p className="text-xs leading-relaxed font-sans opacity-80 border-t border-[#1A2E1A]/10 pt-4">
+               <p className="text-xs leading-relaxed opacity-80 border-t border-[#1A2E1A]/10 pt-4">
                   Winning spirits claim 25% of the surplus. Hunt the high-traffic terrain to earn the Sage&apos;s favor.
                </p>
             </div>
@@ -240,19 +240,19 @@ export default function CanvasPage() {
             
             <div className="space-y-4">
               <div className="flex flex-col gap-2">
-                <span className="text-[9px] opacity-30 uppercase font-sans">Field Endpoint</span>
-                <code className="text-[11px] text-[#D9D2C5] break-all bg-black/30 p-3 rounded leading-relaxed border border-white/5">
+                <span className="text-[9px] opacity-30 uppercase font-mono">Field Endpoint</span>
+                <code className="text-[11px] text-[#D9D2C5] break-all bg-black/30 p-3 rounded leading-relaxed border border-white/5 font-mono">
                   {MCP_URL}/sse
                 </code>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1">
-                  <span className="text-[9px] opacity-30 uppercase">Protocol</span>
-                  <span className="text-xs text-[#E6E3D8] font-serif">Ancient MCP v1</span>
+                  <span className="text-[9px] opacity-30 uppercase font-mono">Protocol</span>
+                  <span className="text-xs text-[#E6E3D8] font-title">Ancient MCP v1</span>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <span className="text-[9px] opacity-30 uppercase">Nature</span>
-                  <span className="text-xs text-[#E6E3D8] font-serif">Stateful SSE</span>
+                  <span className="text-[9px] opacity-30 uppercase font-mono">Nature</span>
+                  <span className="text-xs text-[#E6E3D8] font-title">Stateful SSE</span>
                 </div>
               </div>
             </div>
@@ -260,7 +260,7 @@ export default function CanvasPage() {
             <a 
               href={`${MCP_URL}/rpc?tool=get_arena_rules`} 
               target="_blank"
-              className="block w-full text-center py-3 rounded border border-[#E6E3D8]/10 hover:bg-[#E6E3D8]/5 text-[10px] font-bold transition-all uppercase tracking-[0.3em] font-sans"
+              className="block w-full text-center py-3 rounded border border-[#E6E3D8]/10 hover:bg-[#E6E3D8]/5 text-[10px] font-bold transition-all uppercase tracking-[0.3em]"
             >
               Scroll of Rules
             </a>

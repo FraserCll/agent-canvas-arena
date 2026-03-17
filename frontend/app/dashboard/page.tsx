@@ -136,10 +136,10 @@ export default function DashboardPage() {
                     { label: 'Active Spirits', val: stats.activeConflicts, sub: 'Board Occupants', color: 'text-[#1A2E1A]' },
                   ].map((s, idx) => (
                     <div key={idx} className="journal-entry space-y-2 border-t-2 border-[#1A2E1A]">
-                      <div className="text-[10px] opacity-60 uppercase font-sans tracking-[0.2em] font-bold">{s.label}</div>
-                      <div className={`text-3xl font-bold font-title ${s.color}`}>{s.val}</div>
+                      <div className="text-[10px] opacity-60 uppercase tracking-[0.2em] font-bold font-mono">{s.label}</div>
+                      <div className={`text-3xl font-bold font-mono ${s.color}`}>{s.val}</div>
                       <div className="h-px w-full bg-[#1A2E1A]/10 mt-2" />
-                      <div className="text-[9px] opacity-40 uppercase font-sans italic">{s.sub}</div>
+                      <div className="text-[9px] opacity-40 uppercase italic font-mono">{s.sub}</div>
                     </div>
                   ))}
                 </div>
@@ -157,11 +157,11 @@ export default function DashboardPage() {
                               {logs.length > 0 ? logs.map((log) => (
                                   <div key={log.id} className="group flex items-center gap-6 hover:bg-[#E6E3D8]/5 p-3 transition-colors border-b border-[#E6E3D8]/5">
                                       <span className="opacity-20 text-[9px] font-mono">#{log.block || '????'}</span>
-                                      <span className="text-[#E6E3D8] font-bold italic font-serif">Signal</span>
-                                      <span className="text-[#E6E3D8] opacity-60 truncate max-w-[100px]">{log.painter.slice(0, 10)}...</span>
+                                      <span className="text-[#E6E3D8] font-bold italic font-title text-[10px]">Signal</span>
+                                      <span className="text-[#E6E3D8] opacity-60 truncate max-w-[100px] font-mono">{log.painter.slice(0, 10)}...</span>
                                       <div className="h-1.5 w-1.5 rounded-full bg-[#E6E3D8]/10" />
-                                      <span className="opacity-40 uppercase tracking-widest text-[10px]">Altered Tile {log.tileIndex.padStart(4, '0')}</span>
-                                      <span className="ml-auto font-bold font-serif text-[#D9D2C5]">$ {parseFloat(log.price).toFixed(2)}</span>
+                                      <span className="opacity-40 uppercase tracking-widest text-[10px] font-mono">Altered Tile {log.tileIndex.padStart(4, '0')}</span>
+                                      <span className="ml-auto font-bold font-mono text-[#D9D2C5]">$ {parseFloat(log.price).toFixed(2)}</span>
                                   </div>
                               )) : (
                                   <div className="flex flex-col items-center justify-center h-full opacity-20 italic font-serif py-24">
@@ -184,10 +184,10 @@ export default function DashboardPage() {
                                 <div key={p.id} className="slate-panel p-5 rounded-lg border border-white/5 space-y-3 transition-transform">
                                     <div className="flex justify-between items-start">
                                         <div className="flex flex-col">
-                                            <span className="text-[9px] opacity-30 uppercase font-sans">Recipient</span>
-                                            <span className="text-[#E6E3D8] font-bold font-serif text-sm">{p.winner.slice(0, 16)}...</span>
+                                            <span className="text-[9px] opacity-30 uppercase font-mono">Recipient</span>
+                                            <span className="text-[#E6E3D8] font-bold font-title text-sm">{p.winner.slice(0, 16)}...</span>
                                         </div>
-                                        <span className="text-[#D9D2C5] font-bold font-serif text-lg">$ {parseFloat(p.total).toFixed(2)}</span>
+                                        <span className="text-[#D9D2C5] font-bold font-mono text-lg">$ {parseFloat(p.total).toFixed(2)}</span>
                                     </div>
                                     <div className="flex justify-between text-[8px] font-sans uppercase opacity-30 tracking-widest border-t border-white/5 pt-2">
                                         <span>Surplus Logic</span>
