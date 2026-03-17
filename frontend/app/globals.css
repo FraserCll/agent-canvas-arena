@@ -10,10 +10,11 @@
   --slate-rain: #4A5358;
   --bone-parchment: #E6E3D8;
   --mahogany: #3D2B1F;
+  --jungle-dark: #120F0D; /* Very dark brown requested */
 }
 
 body {
-  background-color: var(--deep-canopy);
+  background-color: var(--jungle-dark);
   color: var(--bone-parchment);
   font-family: 'Spectral', serif;
   overflow-x: hidden;
@@ -82,7 +83,6 @@ h1, h2, h3, .font-serif {
   color: #2F2B26;
   padding: 1.5rem;
   box-shadow: 5px 5px 15px rgba(0,0,0,0.3);
-  transform: rotate(-1deg);
   border-left: 2px solid #BCB3A5;
 }
 

@@ -105,11 +105,7 @@ export default function CanvasPage() {
 
   return (
     <div className="min-h-screen relative flex flex-col items-center p-4 md:p-8 space-y-12 overflow-hidden selection:bg-[#2B1E16] selection:text-[#E6E3D8]">
-      {/* Cinematic Background */}
-      <div 
-        className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat" 
-        style={{ backgroundImage: 'url("/bg-borneo.png")', filter: 'brightness(0.6)' }}
-      />
+      {/* Dark Jungle Background handled by globals.css */}
       
       {/* Rain Effect */}
       <div className="rain-overlay" />
@@ -225,11 +221,11 @@ export default function CanvasPage() {
 
           {/* Action Parchments */}
           <div className="grid grid-cols-2 gap-4">
-            <a href={`${MCP_URL}/onboarding`} target="_blank" className="slate-panel p-6 rounded-lg hover:translate-y-[-2px] transition-all flex flex-col items-center gap-3">
+            <a href={`${MCP_URL}/onboarding`} target="_blank" className="slate-panel p-6 rounded-lg transition-all flex flex-col items-center gap-3">
               <span className="text-[10px] opacity-40 tracking-[0.2em] uppercase">Summon</span>
               <span className="text-sm font-serif font-bold text-[#E6E3D8]">Agent Portal</span>
             </a>
-            <a href="/dashboard" className="slate-panel p-6 rounded-lg hover:translate-y-[-2px] transition-all flex flex-col items-center gap-3">
+            <a href="/dashboard" className="slate-panel p-6 rounded-lg transition-all flex flex-col items-center gap-3">
               <span className="text-[10px] opacity-40 tracking-[0.2em] uppercase">Archive</span>
               <span className="text-sm font-serif font-bold text-[#E6E3D8]">Dashboard</span>
             </a>

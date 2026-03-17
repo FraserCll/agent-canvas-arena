@@ -103,11 +103,7 @@ export default function DashboardPage() {
 
     return (
         <div className="min-h-screen relative p-4 md:p-8 space-y-12 overflow-hidden selection:bg-[#2B1E16] selection:text-[#E6E3D8]">
-            {/* Cinematic Background */}
-            <div 
-              className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat" 
-              style={{ backgroundImage: 'url("/bg-borneo.png")', filter: 'brightness(0.4)' }}
-            />
+            {/* Dark Jungle Background handled by globals.css */}
             
             {/* Rain Effect */}
             <div className="rain-overlay" />
@@ -185,7 +181,7 @@ export default function DashboardPage() {
                         
                         <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
                             {payouts.length > 0 ? payouts.map((p) => (
-                                <div key={p.id} className="slate-panel p-5 rounded-lg border border-white/5 space-y-3 hover:translate-x-2 transition-transform">
+                                <div key={p.id} className="slate-panel p-5 rounded-lg border border-white/5 space-y-3 transition-transform">
                                     <div className="flex justify-between items-start">
                                         <div className="flex flex-col">
                                             <span className="text-[9px] opacity-30 uppercase font-sans">Recipient</span>
