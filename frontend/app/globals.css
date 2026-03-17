@@ -2,98 +2,102 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700&family=JetBrains+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;700&family=Public+Sans:wght@300;400;700&display=swap');
 
 :root {
-  --neon-green: #39FF14;
-  --cyber-blue: #00D1FF;
-  --surge-purple: #B026FF;
-  --deep-bg: #030303;
-  --glass: rgba(255, 255, 255, 0.03);
-  --glass-border: rgba(255, 255, 255, 0.1);
+  --deep-canopy: #1A2E1A;
+  --wet-bark: #2B1E16;
+  --slate-rain: #4A5358;
+  --bone-parchment: #E6E3D8;
+  --mahogany: #3D2B1F;
 }
 
 body {
-  background-color: var(--deep-bg);
-  background-image: 
-    radial-gradient(circle at 50% 50%, rgba(57, 255, 20, 0.05) 0%, transparent 50%),
-    radial-gradient(circle at 100% 0%, rgba(0, 209, 255, 0.05) 0%, transparent 40%);
-  color: #ffffff;
-  font-family: 'Outfit', sans-serif;
+  background-color: var(--deep-canopy);
+  color: var(--bone-parchment);
+  font-family: 'Public Sans', sans-serif;
   overflow-x: hidden;
+  height: 100vh;
+  width: 100vw;
 }
 
-.font-mono {
-  font-family: 'JetBrains Mono', monospace;
+h1, h2, h3, .font-serif {
+  font-family: 'Crimson Pro', serif;
 }
 
-/* Glassmorphism Containers */
-.glass-container {
-  background: var(--glass);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--glass-border);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+/* Tactile Panels */
+.slate-panel {
+  background: rgba(43, 30, 22, 0.85); /* Dark wet bark base */
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(230, 227, 216, 0.1);
+  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.5), 0 20px 40px rgba(0, 0, 0, 0.7);
 }
 
-.neon-border-green {
-  border: 1px solid var(--neon-green);
-  box-shadow: 0 0 15px rgba(57, 255, 20, 0.2);
+.wood-board {
+  background-color: var(--mahogany);
+  background-image: url('/ancient_hardwood_texture.png'); /* Fallback to variable-friendly path logic in component */
+  background-size: cover;
+  box-shadow: inset 0 0 60px rgba(0,0,0,0.8), 0 10px 30px rgba(0,0,0,0.5);
+  border: 4px solid #231912;
 }
 
-.neon-border-blue {
-  border: 1px solid var(--cyber-blue);
-  box-shadow: 0 0 15px rgba(0, 209, 255, 0.2);
+/* Physically Etched Lines */
+.grid-etched {
+  border: 0.5px solid rgba(0, 0, 0, 0.3);
+  box-shadow: inset 0.5px 0.5px 1px rgba(255, 255, 255, 0.05);
 }
 
-/* Surplus Surge Progress Bar */
-.surge-bar {
-  background: linear-gradient(90deg, #39FF14 0%, #00D1FF 50%, #B026FF 100%);
-  background-size: 200% auto;
-  animation: surge-gradient 3s linear infinite;
+/* Natural Stone Representation */
+.stone {
+  border-radius: 45% 55% 50% 50% / 50% 50% 45% 55%; /* Irregular pebble shape */
+  box-shadow: 
+    inset -2px -2px 4px rgba(0,0,0,0.5),
+    inset 2px 2px 4px rgba(255,255,255,0.2),
+    0 2px 4px rgba(0,0,0,0.4);
+  transform: rotate(var(--rotation, 0deg));
+  transition: transform 0.3s ease;
 }
 
-@keyframes surge-gradient {
-  0% { background-position: 0% 50%; }
-  100% { background-position: 200% 50%; }
+.stone:hover {
+  transform: scale(1.1) rotate(calc(var(--rotation) + 10deg));
+  z-index: 10;
 }
 
-/* Scanline Effect */
-.scanline::before {
-  content: " ";
-  display: block;
-  position: absolute;
+/* Rain Effect Overlay */
+.rain-overlay {
+  position: fixed;
   top: 0;
   left: 0;
-  bottom: 0;
-  right: 0;
-  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-  z-index: 2;
-  background-size: 100% 2px, 3px 100%;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
+  z-index: 1;
+  opacity: 0.15;
+  background-image: url('https://www.transparenttextures.com/patterns/stardust.png'); /* Subtle streak simulation */
 }
 
-/* Grid Animations */
-.pixel-pulse {
-  transition: transform 0.2s ease-in-out, opacity 0.2s;
-}
-.pixel-pulse:hover {
-  transform: scale(1.5);
-  z-index: 10;
-  opacity: 1 !important;
-  box-shadow: 0 0 10px white;
+/* Paper/Journal Accent */
+.journal-entry {
+  background: #D9D2C5;
+  color: #2F2B26;
+  padding: 1.5rem;
+  box-shadow: 5px 5px 15px rgba(0,0,0,0.3);
+  transform: rotate(-1deg);
+  border-left: 2px solid #BCB3A5;
 }
 
-/* Scrollbar styling */
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--deep-bg);
+  background: var(--wet-bark);
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--glass-border);
-  border-radius: 10px;
+  background: var(--slate-rain);
 }
-::-webkit-scrollbar-thumb:hover {
-  background: var(--cyber-blue);
+
+@keyframes drop {
+  0% { transform: translateY(-100vh); }
+  100% { transform: translateY(100vh); }
 }

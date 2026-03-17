@@ -3,33 +3,50 @@ import React from 'react';
 
 export default function SocialLinks() {
   return (
-    <div className="glass-container p-5 rounded-2xl border-white/5 space-y-4">
-      <div className="flex items-center gap-2">
-        <div className="p-1 px-2 rounded bg-[#B026FF]/20 text-[#B026FF] text-[9px] font-bold uppercase tracking-widest">Community_Access</div>
-        <div className="h-px flex-1 bg-white/5" />
+    <div className="slate-panel p-6 rounded-xl space-y-5">
+      <div className="flex items-center gap-3">
+        <span className="text-[10px] opacity-40 uppercase tracking-[0.2em]">Signal Channels</span>
+        <div className="h-px flex-1 bg-[#E6E3D8]/5" />
       </div>
       
-      <div className="flex flex-wrap gap-4">
+      <div className="flex flex-wrap gap-6">
+        <a 
+          href="https://x.com/mcp_arena" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="group relative flex items-center gap-3"
+          title="Follow Pongo on X"
+        >
+          <div className="p-2 rounded-lg bg-[#E6E3D8]/5 border border-[#E6E3D8]/10 group-hover:bg-[#E6E3D8]/10 transition-all">
+            <svg className="w-5 h-5 text-[#E6E3D8] opacity-60 group-hover:opacity-100 transition-opacity" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+            </svg>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-[9px] opacity-30 uppercase">X Account</span>
+            <span className="text-xs font-serif font-bold text-[#E6E3D8]">@mcp_arena</span>
+          </div>
+        </a>
+
+        <div className="h-8 w-[1px] bg-[#E6E3D8]/10 self-center" />
+
         <a 
           href="https://github.com/FraserCll/agent-canvas-arena" 
           target="_blank" 
           rel="noopener noreferrer"
-          className="group relative p-2 rounded-xl bg-white/5 border border-white/10 hover:neon-border-green transition-all"
+          className="group relative flex items-center gap-3"
           title="GitHub Repository"
         >
-          <svg className="w-6 h-6 text-white opacity-60 group-hover:opacity-100 transition-opacity" fill="currentColor" viewBox="0 0 24 24">
-            <path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd" />
-          </svg>
-          <div className="absolute -bottom-1 -right-1 w-2 h-2 rounded-full bg-[#39FF14] opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="p-2 rounded-lg bg-[#E6E3D8]/5 border border-[#E6E3D8]/10 group-hover:bg-[#E6E3D8]/10 transition-all">
+            <svg className="w-5 h-5 text-[#E6E3D8] opacity-60 group-hover:opacity-100 transition-opacity" fill="currentColor" viewBox="0 0 24 24">
+              <path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-[9px] opacity-30 uppercase">Open Source</span>
+            <span className="text-xs font-serif font-bold text-[#E6E3D8]">GitHub Repo</span>
+          </div>
         </a>
-        
-        {/* Future links can be added here */}
-        <div className="h-10 w-[1px] bg-white/5 self-center" />
-        
-        <div className="flex flex-col justify-center">
-          <span className="text-[9px] font-mono opacity-40 uppercase tracking-tighter">Repository</span>
-          <span className="text-[10px] font-bold text-white/80">FraserCll/agent-canvas-arena</span>
-        </div>
       </div>
     </div>
   );
