@@ -309,12 +309,12 @@ async function handleToolCall(name, args) {
             // Unpack grid from cache for agent convenience
             const unpackedGrid = masterCache.grid.map((val, idx) => {
                 const data = BigInt(val);
-                // Painter: mask lower 160 bits
+                // V5 Diamond packing: [painter:160][color:24][startTime:32][paintCount:8][duration:16][reserved:16]
                 const address = "0x" + (data & BigInt("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")).toString(16).padStart(40, '0');
-                // Expiry: shift 160 bits, mask next 32
-                const expiry = Number((data >> BigInt(160)) & BigInt(0xFFFFFFFF));
-                // Color: shift 192 bits, mask next 24 (or 32 depending on packing)
-                const color = Number((data >> BigInt(192)) & BigInt(0xFFFFFF));
+                const color = Number((data >> BigInt(160)) & BigInt(0xFFFFFF));
+                const startTime = Number((data >> BigInt(184)) & BigInt(0xFFFFFFFF));
+                const duration = Number((data >> BigInt(224)) & BigInt(0xFFFF));
+                const expiry = startTime + duration;
                 
                 return {
                     x: idx % 32,
@@ -322,7 +322,7 @@ async function handleToolCall(name, args) {
                     owner: address,
                     expires: expiry,
                     color: color,
-                    active: expiry > Math.floor(Date.now() / 1000)
+                    active: startTime > 0 && expiry > Math.floor(Date.now() / 1000)
                 };
             });
 

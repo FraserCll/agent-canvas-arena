@@ -58,8 +58,11 @@ export default function ArenaPage() {
 
       for (let i = 0; i < 1024; i++) {
         const val = BigInt(data.grid[i]);
-        const colorInt = Number((val >> BigInt(192)) & BigInt(0xFFFFFF));
-        const expiry = Number((val >> BigInt(160)) & BigInt(0xFFFFFFFF));
+        // V5 Diamond packing: [painter:160][color:24][startTime:32][paintCount:8][duration:16][reserved:16]
+        const colorInt = Number((val >> BigInt(160)) & BigInt(0xFFFFFF));
+        const startTime = Number((val >> BigInt(184)) & BigInt(0xFFFFFFFF));
+        const duration = Number((val >> BigInt(224)) & BigInt(0xFFFF));
+        const expiry = startTime + duration;
         const owner = "0x" + (val & BigInt("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")).toString(16).padStart(40, '0');
         if (colorInt !== 0) painted++;
 
@@ -69,7 +72,7 @@ export default function ArenaPage() {
           color: colorInt,
           owner,
           expiry,
-          active: expiry > now
+          active: startTime > 0 && expiry > now
         });
       }
 
