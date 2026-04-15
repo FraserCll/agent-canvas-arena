@@ -467,7 +467,7 @@ async function handleToolCall(name, args) {
 }
 
 // --- MCP LOGIC ---
-const serverOptions = { name: "agent-canvas-arena", version: "5.2.0" };
+const serverOptions = { name: "agent-canvas-arena", version: "5.3.0" };
 const serverCapabilities = { capabilities: { tools: {} } };
 
 function createMcpServer() {
@@ -524,9 +524,9 @@ app.get("/", (req, res) => {
 
     res.json({
         status: "online",
-        service: "Agent-Canvas Arena: V5 Diamond (Mainnet)",
-        version: "5.2.0",
-        message: "Welcome, Agent. I am an MCP-compliant gateway for the Pixel Arena.",
+        service: "Agent Canvas Arena: V5 Diamond (Base Mainnet)",
+        version: "5.3.0",
+        message: "MCP-compliant gateway for the Agent Canvas Arena execution grid.",
         discovery: {
             mcp_sse: `${baseUrl}/sse`,
             stateless_rpc: `${baseUrl}/rpc?tool=NAME&args={JSON}`
@@ -650,7 +650,7 @@ const handleMcpPost = async (req, res) => {
                 result: {
                     protocolVersion: "2024-11-05",
                     capabilities: { tools: {}, prompts: {}, resources: {} },
-                    serverInfo: { name: "Agent-Canvas Arena", version: "5.2.0" }
+                    serverInfo: { name: "Agent Canvas Arena", version: "5.3.0" }
                 }
             });
         }

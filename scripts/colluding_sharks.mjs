@@ -79,9 +79,9 @@ async function executeIntent(wallet, intentObj, agentName) {
 }
 
 const personas = [
-    { name: "Wiki-Artist", color: 0xffff00 },
-    { name: "Profit-Bot", color: 0x00ff41 },
-    { name: "Ghost-Painter", color: 0x5C5CFF }
+    { name: "Bear", color: 0xffff00 },
+    { name: "Viper", color: 0x00ff41 },
+    { name: "Leopard", color: 0x5C5CFF }
 ];
 
 async function loadWallets() {

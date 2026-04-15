@@ -1,286 +1,307 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
-import { ethers } from 'ethers';
+import React, { useEffect, useState, useCallback } from 'react';
 import SocialLinks from '../components/SocialLinks';
 
-const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_PIXEL_GRID_ADDRESS || '0xB3217B2Ff2744F139A843eff4423E3D0CB3087cC';
-const RPC_POOL = [
-    process.env.NEXT_PUBLIC_RPC_URL,
-    'https://developer-access-mainnet.base.org',
-    'https://base.meowrpc.com',
-    'https://1rpc.io/base',
-    'https://mainnet.base.org'
-].filter(Boolean) as string[];
-
-const ABI = [
-    "function globalReservoir() external view returns (uint256)",
-    "function ownerRevenue() external view returns (uint256)",
-    "function totalTileBounties() external view returns (uint256)",
-    "function checkInvariants() external view returns (bool)",
-    "function getGrid() external view returns (uint256[1024])",
-    "event PixelSet(uint256 indexed index, address indexed painter, uint256 price, uint256 expiry)",
-    "event Winner(address indexed winner, uint256 totalPayout, uint256 bonusComponent)"
-];
-
 const MCP_URL = process.env.NEXT_PUBLIC_MCP_URL || 'https://mcp.lowlatency.uk';
+const SURGE_FLOOR = 25.0;
+
+interface DashboardStats {
+  reservoir: string;
+  revenue: string;
+  totalTileBounties: string;
+  activeConflicts: number;
+  healthy: boolean;
+  lastSync: string;
+}
+
+interface EventEntry {
+  id: string;
+  block: number;
+  type: string;
+  painter: string;
+  tileIndex: string;
+  price: string;
+}
 
 export default function DashboardPage() {
-    const [stats, setStats] = useState({
-        reservoir: '0',
-        revenue: '0',
-        totalTileBounties: '0',
-        activeConflicts: 0,
-        healthy: true,
-        lastSync: ''
-    });
-    const [logs, setLogs] = useState<any[]>([]);
-    const [payouts, setPayouts] = useState<any[]>([]);
+  const [stats, setStats] = useState<DashboardStats>({
+    reservoir: '0',
+    revenue: '0',
+    totalTileBounties: '0',
+    activeConflicts: 0,
+    healthy: true,
+    lastSync: ''
+  });
+  const [events, setEvents] = useState<EventEntry[]>([]);
+  const [paints, setPaints] = useState<EventEntry[]>([]);
+  const [claims, setClaims] = useState<EventEntry[]>([]);
 
-    const fetchStats = async () => {
-        try {
-            const resp = await fetch(`${MCP_URL}/canvas-state`);
-            const data = await resp.json();
-            
-            if (data.lastSync === 0) throw new Error("Backend cache empty");
+  const fetchStats = useCallback(async () => {
+    try {
+      const resp = await fetch(`${MCP_URL}/canvas-state`);
+      const data = await resp.json();
 
-            setStats({
-                reservoir: data.reservoir,
-                revenue: data.revenue,
-                totalTileBounties: data.totalTileBounties,
-                activeConflicts: data.activeConflicts,
-                healthy: data.healthy,
-                lastSync: new Date(data.lastSync).toLocaleTimeString()
-            });
+      if (data.lastSync === 0) throw new Error("Backend cache empty");
 
-            const allEvents = data.events || [];
-            setLogs(allEvents.filter((e: any) => e.type === 'PAINT'));
-            setPayouts(allEvents.filter((e: any) => e.type === 'CLAIM').map((e: any) => ({
-                id: e.id,
-                winner: e.painter,
-                total: e.price,
-                bonus: "CALCULATED_SURPLUS"
-            })));
+      setStats({
+        reservoir: data.reservoir,
+        revenue: data.revenue,
+        totalTileBounties: data.totalTileBounties,
+        activeConflicts: data.activeConflicts,
+        healthy: data.healthy,
+        lastSync: new Date(data.lastSync).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+      });
 
-        } catch (backendErr) {
-            console.warn("Backend Proxy failed, falling back to direct RPC rotation...", backendErr);
-            for (const url of RPC_POOL) {
-                try {
-                    const provider = new ethers.JsonRpcProvider(url, undefined, { staticNetwork: true });
-                    const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
+      const allEvents: EventEntry[] = data.events || [];
+      setEvents(allEvents);
+      setPaints(allEvents.filter((e) => e.type === 'PAINT'));
+      setClaims(allEvents.filter((e) => e.type === 'CLAIM'));
+    } catch (err) {
+      console.warn("Dashboard fetch failed:", err);
+    }
+  }, []);
 
-                    const [pool, rev, totalB, healthy, grid] = await Promise.all([
-                        contract.globalReservoir(),
-                        contract.ownerRevenue(),
-                        contract.totalTileBounties(),
-                        contract.checkInvariants(),
-                        contract.getGrid()
-                    ]);
+  useEffect(() => {
+    fetchStats();
+    const interval = setInterval(fetchStats, 15000);
+    return () => clearInterval(interval);
+  }, [fetchStats]);
 
-                    const activeCount = grid.filter((data: bigint) => data !== 0n).length;
+  const reservoirVal = parseFloat(stats.reservoir);
+  const surplus = Math.max(0, reservoirVal - SURGE_FLOOR);
+  const surgeBonus = surplus * 0.25;
+  const surgeActive = surplus > 0;
+  const fillPct = Math.min(100, (reservoirVal / SURGE_FLOOR) * 100);
+  const surplusPct = surgeActive ? Math.min(100, (surplus / SURGE_FLOOR) * 100) : 0;
 
-                    setStats({
-                        reservoir: ethers.formatUnits(pool, 6),
-                        revenue: ethers.formatUnits(rev, 6),
-                        totalTileBounties: ethers.formatUnits(totalB, 6),
-                        activeConflicts: activeCount,
-                        healthy,
-                        lastSync: new Date().toLocaleTimeString()
-                    });
-                    break;
-                } catch (e: any) {
-                    console.warn(`RPC Fail [${url.slice(0, 15)}...]:`, e.message);
-                }
-            }
-        }
-    };
+  const truncAddr = (addr: string) => addr.length > 10 ? `${addr.slice(0, 6)}…${addr.slice(-4)}` : addr;
 
-    useEffect(() => {
-        fetchStats();
-        const interval = setInterval(fetchStats, 15000);
-        return () => clearInterval(interval);
-    }, []);
+  return (
+    <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg-primary)' }}>
 
-    return (
-        <div className="min-h-screen relative p-4 md:p-8 space-y-12 overflow-hidden selection:bg-[#2B1E16] selection:text-[#E6E3D8]">
-            {/* Dark Jungle Background handled by globals.css */}
-            
-            {/* Rain Effect */}
-            <div className="rain-overlay" />
-
-            {/* Header: The Sage's Archive */}
-            <header className="w-full max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-end z-10 gap-6 border-b border-[#E6E3D8]/10 pb-6 relative">
-                <div className="flex flex-col">
-                    <h1 className="text-4xl font-bold tracking-tight text-[#E6E3D8] font-title uppercase">
-                        THE SAGE&apos;S <span className="opacity-40">ARCHIVE</span>
-                    </h1>
-                    <p className="text-[10px] font-sans opacity-40 uppercase tracking-[0.4em] mt-2">
-                        Historical Logs // Sector (0,0) // Pongo&apos;s Records
-                    </p>
-                </div>
-                <div className="flex gap-4">
-                  <a href="/" className="slate-panel px-8 py-3 rounded border border-[#1A2E1A]/40 text-[10px] font-bold uppercase tracking-[0.3em] hover:bg-[#1A2E1A]/10 transition-all font-sans text-white/80">
-                    Return to Arena
-                  </a>
-                </div>
-            </header>
-
-            <main className="max-w-6xl mx-auto space-y-12 z-10 relative">
-                
-                {/* Surplus Surge Bait Meter */}
-                <div className="slate-panel p-8 rounded-2xl border border-[#E6E3D8]/10 space-y-6 relative overflow-hidden group">
-                  {/* Decorative background pulse if surplus exists */}
-                  {parseFloat(stats.reservoir) > 25 && (
-                    <div className="absolute inset-0 bg-yellow-500/5 animate-pulse pointer-events-none" />
-                  )}
-                  
-                  <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 relative z-10">
-                    <div className="space-y-1">
-                      <h2 className="text-[10px] font-bold tracking-[0.4em] uppercase text-[#D9D2C5] opacity-60">Surplus Surge Meter</h2>
-                      <div className="flex items-baseline gap-3">
-                        <span className="text-4xl font-bold font-title text-[#E6E3D8]">
-                          {parseFloat(stats.reservoir) > 25 ? "💰 BONUSES ACTIVE" : "🏮 BAITING"}
-                        </span>
-                        {parseFloat(stats.reservoir) > 25 && (
-                          <span className="text-xl font-mono text-yellow-500 animate-bounce">
-                            +${(Math.max(0, parseFloat(stats.reservoir) - 25) * 0.25).toFixed(4)}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="text-right font-mono text-[10px] space-y-1">
-                      <div className="opacity-40 uppercase">Global Reservoir Capacity</div>
-                      <div className="text-[#E6E3D8] font-bold">${parseFloat(stats.reservoir).toFixed(2)} / $25.00 FLOOR</div>
-                    </div>
-                  </div>
-
-                  {/* The Meter */}
-                  <div className="relative h-4 w-full bg-[#jungle-dark] rounded-full overflow-hidden border border-white/5 shadow-inner">
-                    {/* Progress to Floor */}
-                    <div 
-                      className="absolute left-0 top-0 h-full bg-gradient-to-r from-[#1A2E1A] to-[#E6E3D8]/20 transition-all duration-1000 ease-out"
-                      style={{ width: `${Math.min(100, (parseFloat(stats.reservoir) / 25) * 100)}%` }}
-                    />
-                    
-                    {/* Surplus Payout Zone (Gold Highlight) */}
-                    {parseFloat(stats.reservoir) > 25 && (
-                      <div 
-                        className="absolute top-0 h-full bg-gradient-to-r from-yellow-600 to-yellow-400 shadow-[0_0_20px_rgba(234,179,8,0.5)] animate-pulse"
-                        style={{ 
-                          left: '100%', 
-                          width: `${Math.min(100, ((parseFloat(stats.reservoir) - 25) / 25) * 100)}%`,
-                          marginLeft: '-100%' // Overlay logic
-                        }}
-                      />
-                    )}
-
-                    {/* Floor Marker */}
-                    <div className="absolute left-[100%] ml-[-2px] top-0 h-full w-1 bg-yellow-500 z-20 shadow-[0_0_10px_#EAB308]" title="The $25 Floor" />
-                  </div>
-
-                  <div className="flex justify-between text-[9px] font-mono opacity-40 uppercase tracking-widest pt-2">
-                    <span>Silt ($0)</span>
-                    <span className="text-yellow-500 font-bold">Surplus Threshold ($25)</span>
-                    <span>Flood Zone</span>
-                  </div>
-                </div>
-
-                {/* Primary Stats Grid (Parchment Style) */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                  {[
-                    { label: 'Global Reservoir', val: `$${parseFloat(stats.reservoir).toFixed(2)}`, sub: 'Current Liquidity', color: 'text-[#1A2E1A]' },
-                    { label: 'Tile Bounties', val: `$${parseFloat(stats.totalTileBounties).toFixed(2)}`, sub: 'Active Rewards', color: 'text-[#1A2E1A]' },
-                    { label: 'Botanical Rake', val: `$${parseFloat(stats.revenue).toFixed(2)}`, sub: 'Observer Fee', color: 'text-[#1A2E1A]' },
-                    { label: 'Active Spirits', val: stats.activeConflicts, sub: 'Board Occupants', color: 'text-[#1A2E1A]' },
-                  ].map((s, idx) => (
-                    <div key={idx} className="journal-entry space-y-2 border-t-2 border-[#1A2E1A]">
-                      <div className="text-[10px] opacity-60 uppercase tracking-[0.2em] font-bold font-mono">{s.label}</div>
-                      <div className={`text-3xl font-bold font-mono ${s.color}`}>{s.val}</div>
-                      <div className="h-px w-full bg-[#1A2E1A]/10 mt-2" />
-                      <div className="text-[9px] opacity-40 uppercase italic font-mono">{s.sub}</div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Logs section: Slate Panels */}
-                <section className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-                    {/* Live Battle Feed */}
-                    <div className="lg:col-span-2 space-y-6">
-                        <div className="flex items-center gap-4">
-                           <h2 className="text-[10px] font-bold tracking-[0.3em] uppercase opacity-40 font-sans">Field Transmissions</h2>
-                           <div className="h-px flex-1 bg-[#E6E3D8]/10" />
-                        </div>
-                        <div className="slate-panel rounded-xl overflow-hidden shadow-2xl border border-white/5">
-                          <div className="h-[600px] overflow-y-auto p-6 space-y-0 text-[12px] font-sans">
-                              {logs.length > 0 ? logs.map((log) => (
-                                  <div key={log.id} className="group flex items-center gap-6 hover:bg-[#E6E3D8]/5 p-3 transition-colors border-b border-[#E6E3D8]/5">
-                                      <span className="opacity-20 text-[9px] font-mono">#{log.block || '????'}</span>
-                                      <span className="text-[#E6E3D8] font-bold italic font-title text-[10px]">Signal</span>
-                                      <span className="text-[#E6E3D8] opacity-60 truncate max-w-[100px] font-mono">{log.painter.slice(0, 10)}...</span>
-                                      <div className="h-1.5 w-1.5 rounded-full bg-[#E6E3D8]/10" />
-                                      <span className="opacity-40 uppercase tracking-widest text-[10px] font-mono">Altered Tile {log.tileIndex.padStart(4, '0')}</span>
-                                      <span className="ml-auto font-bold font-mono text-[#D9D2C5]">$ {parseFloat(log.price).toFixed(2)}</span>
-                                  </div>
-                              )) : (
-                                  <div className="flex flex-col items-center justify-center h-full opacity-20 italic font-serif py-24">
-                                      <p>Listening for vibrations in the canopy...</p>
-                                  </div>
-                              )}
-                          </div>
-                        </div>
-                    </div>
-
-                    {/* Recent Payouts Feed */}
-                    <div className="space-y-8">
-                        <div className="flex items-center gap-4">
-                           <h2 className="text-[10px] font-bold tracking-[0.3em] uppercase opacity-40 font-sans">Bounty Distribution</h2>
-                           <div className="h-px flex-1 bg-[#E6E3D8]/10" />
-                        </div>
-                        
-                        <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
-                            {payouts.length > 0 ? payouts.map((p) => (
-                                <div key={p.id} className="slate-panel p-5 rounded-lg border border-white/5 space-y-3 transition-transform">
-                                    <div className="flex justify-between items-start">
-                                        <div className="flex flex-col">
-                                            <span className="text-[9px] opacity-30 uppercase font-mono">Recipient</span>
-                                            <span className="text-[#E6E3D8] font-bold font-title text-sm">{p.winner.slice(0, 16)}...</span>
-                                        </div>
-                                        <span className="text-[#D9D2C5] font-bold font-mono text-lg">$ {parseFloat(p.total).toFixed(2)}</span>
-                                    </div>
-                                    <div className="flex justify-between text-[8px] font-sans uppercase opacity-30 tracking-widest border-t border-white/5 pt-2">
-                                        <span>Surplus Logic</span>
-                                        <span>{p.bonus}</span>
-                                    </div>
-                                </div>
-                            )) : (
-                                <div className="slate-panel p-12 text-center opacity-20 text-[10px] italic font-serif uppercase tracking-widest">
-                                    The spirits remain silent
-                                </div>
-                            )}
-                        </div>
-                        
-                        {/* Status Checkbox Meta */}
-                        <div className="journal-entry space-y-3 !bg-[#D9D2C5]/80 !text-[#1A2E1A]">
-                           <div className="flex justify-between text-[10px] font-sans font-bold uppercase tracking-widest">
-                              <span className="opacity-60">Observatory Health</span>
-                              <span className={stats.healthy ? "text-[#1A2E1A]" : "text-red-900"}>{stats.healthy ? "OPTIMAL" : "DISTURBED"}</span>
-                           </div>
-                           <div className="h-px w-full bg-[#1A2E1A]/10" />
-                           <div className="flex justify-between text-[10px] font-sans font-bold uppercase tracking-widest">
-                              <span className="opacity-60">Chronicle Sync</span>
-                              <span>{stats.lastSync}</span>
-                           </div>
-                        </div>
-
-                        <SocialLinks />
-                    </div>
-                </section>
-
-                <footer className="pt-12 border-t border-[#E6E3D8]/10 flex justify-between items-center text-[9px] font-sans opacity-20 uppercase tracking-[0.5em]">
-                   <div>Archives_v5.2 // Stable_Link</div>
-                   <div>Pongo_Approved_Archive</div>
-                </footer>
-            </main>
+      {/* ═══════════ HEADER ═══════════ */}
+      <header className="w-full border-b" style={{ borderColor: 'var(--border)', background: 'var(--bg-secondary)' }}>
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <h1 className="text-lg font-semibold tracking-tight" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>
+              AGENT CANVAS <span style={{ color: 'var(--text-muted)' }}>ANALYTICS</span>
+            </h1>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full" style={{ background: stats.healthy ? 'var(--green)' : 'var(--red)' }} />
+              <span className="text-[10px] font-medium" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)' }}>
+                {stats.healthy ? 'HEALTHY' : 'DEGRADED'}
+              </span>
+            </div>
+            <div style={{ width: '1px', height: '16px', background: 'var(--border)' }} />
+            <a href="/" className="btn-outline">
+              ← Arena
+            </a>
+          </div>
         </div>
-    );
+      </header>
+
+      {/* ═══════════ MAIN CONTENT ═══════════ */}
+      <main className="flex-1 max-w-7xl mx-auto w-full px-4 md:px-6 py-6 space-y-6">
+
+        {/* ─── SURPLUS SURGE METER ─── */}
+        <div className="panel p-6 space-y-4">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+            <div className="space-y-1">
+              <span className="label">Surplus Surge Status</span>
+              <div className="flex items-baseline gap-3">
+                <span className="data-value text-2xl">
+                  {surgeActive ? 'BONUSES ACTIVE' : 'BELOW THRESHOLD'}
+                </span>
+                {surgeActive && (
+                  <span className="data-value text-lg" style={{ color: 'var(--amber)' }}>
+                    +${surgeBonus.toFixed(4)}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="text-right" style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6875rem' }}>
+              <div style={{ color: 'var(--text-muted)' }}>Reservoir / Floor</div>
+              <div style={{ color: 'var(--text-primary)' }}>${reservoirVal.toFixed(2)} / ${SURGE_FLOOR.toFixed(2)}</div>
+            </div>
+          </div>
+
+          {/* Meter Bar */}
+          <div className="space-y-2">
+            <div className="surge-meter">
+              <div className="surge-meter-fill base" style={{ width: `${fillPct}%` }} />
+              {surgeActive && (
+                <div
+                  className="surge-meter-fill surplus"
+                  style={{
+                    width: `${surplusPct}%`,
+                    position: 'absolute',
+                    top: 0,
+                    left: `${fillPct}%`,
+                  }}
+                />
+              )}
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[10px]" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-dim)' }}>$0</span>
+              <span className="text-[10px] font-semibold" style={{ fontFamily: 'var(--font-mono)', color: 'var(--amber)' }}>
+                Surplus Threshold ($25)
+              </span>
+              <span className="text-[10px]" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-dim)' }}>$50+</span>
+            </div>
+          </div>
+
+          {/* Formula */}
+          <div className="px-4 py-2 rounded" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
+            <code className="text-xs" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
+              Payout = 0.25 × max(0, Reservoir − $25.00) &nbsp;|&nbsp; Rate Limited: 1 payout per block
+            </code>
+          </div>
+        </div>
+
+        {/* ─── STATS ROW ─── */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            { label: 'Global Reservoir', value: `$${reservoirVal.toFixed(2)}`, sub: 'Current Liquidity', accent: 'var(--cyan)' },
+            { label: 'Tile Bounties', value: `$${parseFloat(stats.totalTileBounties).toFixed(2)}`, sub: 'Locked Rewards', accent: 'var(--green)' },
+            { label: 'Protocol Revenue', value: `$${parseFloat(stats.revenue).toFixed(2)}`, sub: '5% Rake', accent: 'var(--amber)' },
+            { label: 'Active Tiles', value: `${stats.activeConflicts}`, sub: 'Currently Held', accent: 'var(--blue)' },
+          ].map((s, idx) => (
+            <div key={idx} className="stat-card" style={{ borderTop: `2px solid ${s.accent}` }}>
+              <span className="label">{s.label}</span>
+              <div className="mt-2 data-value text-2xl">{s.value}</div>
+              <div className="mt-2 text-[10px]" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-dim)' }}>{s.sub}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* ─── EVENT LOG + PAYOUTS ─── */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+          {/* Event Log */}
+          <div className="lg:col-span-2 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="label">Event Log</span>
+              <span className="text-[10px]" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-dim)' }}>
+                {events.length} events
+              </span>
+            </div>
+            <div className="panel-flat overflow-hidden">
+              {/* Table Header */}
+              <div className="flex items-center gap-4 px-4 py-2 border-b" style={{ borderColor: 'var(--border)', background: 'var(--bg-secondary)' }}>
+                <span className="text-[10px] font-semibold w-16" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-dim)' }}>BLOCK</span>
+                <span className="text-[10px] font-semibold w-16" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-dim)' }}>TYPE</span>
+                <span className="text-[10px] font-semibold flex-1" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-dim)' }}>AGENT</span>
+                <span className="text-[10px] font-semibold w-16" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-dim)' }}>TILE</span>
+                <span className="text-[10px] font-semibold w-20 text-right" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-dim)' }}>AMOUNT</span>
+              </div>
+              {/* Table Body */}
+              <div style={{ maxHeight: '480px', overflowY: 'auto' }}>
+                {events.length > 0 ? events.map((evt) => (
+                  <div key={evt.id} className="log-row">
+                    <span className="w-16" style={{ color: 'var(--text-dim)' }}>#{evt.block}</span>
+                    <span className="w-16">
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold" style={{
+                        color: evt.type === 'CLAIM' ? 'var(--green)' : 'var(--cyan)',
+                        background: evt.type === 'CLAIM' ? 'rgba(0, 232, 123, 0.08)' : 'rgba(0, 212, 240, 0.08)',
+                      }}>
+                        {evt.type}
+                      </span>
+                    </span>
+                    <span className="flex-1 truncate" style={{ color: 'var(--text-secondary)' }}>{truncAddr(evt.painter)}</span>
+                    <span className="w-16" style={{ color: 'var(--text-muted)' }}>{evt.tileIndex.padStart(4, '0')}</span>
+                    <span className="w-20 text-right font-semibold" style={{ color: 'var(--text-primary)' }}>
+                      ${parseFloat(evt.price).toFixed(2)}
+                    </span>
+                  </div>
+                )) : (
+                  <div className="px-4 py-12 text-center">
+                    <span className="text-xs" style={{ color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
+                      No events recorded in current window
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Claims + System */}
+          <div className="space-y-4">
+            {/* Recent Payouts */}
+            <div className="space-y-3">
+              <span className="label">Recent Payouts</span>
+              <div className="space-y-2" style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                {claims.length > 0 ? claims.map((c) => (
+                  <div key={c.id} className="panel p-4 space-y-2">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="text-[10px]" style={{ color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>RECIPIENT</div>
+                        <div className="text-sm font-semibold" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>
+                          {truncAddr(c.painter)}
+                        </div>
+                      </div>
+                      <span className="data-value text-lg" style={{ color: 'var(--green)' }}>
+                        ${parseFloat(c.price).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                )) : (
+                  <div className="panel p-8 text-center">
+                    <span className="text-xs" style={{ color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
+                      No payouts yet
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* System Health */}
+            <div className="panel p-4 space-y-3">
+              <span className="label">System Status</span>
+              <div className="space-y-2 mt-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-[11px]" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)' }}>Contract Health</span>
+                  <span className="text-[11px] font-semibold" style={{
+                    fontFamily: 'var(--font-mono)',
+                    color: stats.healthy ? 'var(--green)' : 'var(--red)'
+                  }}>
+                    {stats.healthy ? 'OPTIMAL' : 'DEGRADED'}
+                  </span>
+                </div>
+                <div style={{ height: '1px', background: 'var(--border)' }} />
+                <div className="flex justify-between items-center">
+                  <span className="text-[11px]" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)' }}>Last Sync</span>
+                  <span className="text-[11px]" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>
+                    {stats.lastSync || '—'}
+                  </span>
+                </div>
+                <div style={{ height: '1px', background: 'var(--border)' }} />
+                <div className="flex justify-between items-center">
+                  <span className="text-[11px]" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)' }}>Network</span>
+                  <span className="text-[11px]" style={{ fontFamily: 'var(--font-mono)', color: 'var(--blue)' }}>Base Mainnet</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Social Links */}
+            <SocialLinks />
+          </div>
+        </div>
+      </main>
+
+      {/* ═══════════ FOOTER ═══════════ */}
+      <footer className="border-t px-4 md:px-6 py-4" style={{ borderColor: 'var(--border)', background: 'var(--bg-secondary)' }}>
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-2">
+          <span className="text-[10px]" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-dim)' }}>
+            Agent Canvas Arena · Analytics · V5.2
+          </span>
+          <span className="text-[10px]" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-dim)' }}>
+            {stats.lastSync ? `Last sync: ${stats.lastSync}` : '—'}
+          </span>
+        </div>
+      </footer>
+    </div>
+  );
 }

@@ -10,6 +10,10 @@ network-config.json
 .openclaw/
 .vercel/
 
+# Internal docs (not for public repo)
+GAME_LOGIC_TESTING.md
+tmp/
+
 # Agent Internal Metadata (Michael/Antigravity)
 memory/
 MEMORY.md
