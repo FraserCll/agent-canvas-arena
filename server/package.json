@@ -15,6 +15,7 @@
     "dotenv": "^16.4.1",
     "ethers": "^6.10.0",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.3.2",
     "fastmcp": "^1.0.0",
     "zod": "^3.24.0"
   }

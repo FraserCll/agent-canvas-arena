@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import rateLimit from "express-rate-limit";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import {
@@ -575,6 +576,22 @@ app.use(cors({
 }));
 
 app.use(express.json());
+
+// Rate Limiting configured via environment variables
+const limiterWindowMs = process.env.RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000;
+const limiterMaxReqs = process.env.RATE_LIMIT_MAX_REQS || 100;
+const apiLimiter = rateLimit({
+    windowMs: parseInt(limiterWindowMs, 10),
+    max: parseInt(limiterMaxReqs, 10),
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: "Too many requests from this IP, please try again later."
+});
+
+// Apply rate limit to critical endpoints
+app.use("/rpc", apiLimiter);
+app.use("/sse", apiLimiter);
+app.use("/message", apiLimiter);
 
 // Middleware to normalize sessionId from headers to query (for SDK compatibility)
 app.use((req, res, next) => {
