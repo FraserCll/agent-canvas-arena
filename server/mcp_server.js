@@ -466,6 +466,78 @@ async function handleToolCall(name, args) {
     }
 }
 
+// --- HOUSE BOT (LIQUIDITY DEFENDER) --- //
+// To activate on Railway, set HOUSE_BOT_PRIVATE_KEY and fund the wallet internal balance.
+async function runHouseBot() {
+    if (!process.env.HOUSE_BOT_PRIVATE_KEY) return;
+    try {
+        const houseWallet = new ethers.Wallet(process.env.HOUSE_BOT_PRIVATE_KEY, provider);
+        const houseContract = new ethers.Contract(contractAddress, abi, houseWallet);
+
+        const surplusAmount = Number(masterCache.surplusBonus);
+        if (surplusAmount <= 0.05) return; // Nothing worth defending
+
+        let bestTarget = null;
+        let maxProfit = 0;
+
+        for (let i = 0; i < masterCache.grid.length; i++) {
+            const val = masterCache.grid[i];
+            if (val === "0") continue;
+            
+            const data = BigInt(val);
+            const address = "0x" + (data & BigInt("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")).toString(16).padStart(40, '0');
+            const startTime = Number((data >> BigInt(184)) & BigInt(0xFFFFFFFF));
+            const duration = Number((data >> BigInt(224)) & BigInt(0xFFFF));
+            const expiry = startTime + duration;
+            
+            const x = i % 32;
+            const y = Math.floor(i / 32);
+
+            // Handle House Bot's own tiles: Claim them if we won!
+            if (address.toLowerCase() === houseWallet.address.toLowerCase()) {
+                if (startTime > 0 && expiry < Math.floor(Date.now() / 1000)) {
+                    console.log(`[house-bot] Victory detected at (${x}, ${y}). Claiming reward to replenish internal ledger...`);
+                    try {
+                        await houseContract.claimReward(x, y);
+                        console.log(`[house-bot] Claim successful! Internal ledger replenished.`);
+                    } catch(e) { /* Likely pending or already claimed */ }
+                }
+                continue; // Ignore owned sectors
+            }
+            
+            // Ignore dead tiles or tiles that expired (someone else won but hasn't clicked claim yet)
+            if (startTime === 0 || expiry < Math.floor(Date.now() / 1000)) continue;
+            
+            const info = await contract.getPixelInfo(x, y);
+            const bounty = Number(ethers.formatUnits(info[4], 6));
+            const nextPrice = Number(ethers.formatUnits(info[3], 6));
+            
+            const ev = bounty + surplusAmount;
+            const potentialProfit = ev - nextPrice;
+            
+            if (potentialProfit > 0.05 && potentialProfit > maxProfit) {
+                maxProfit = potentialProfit;
+                bestTarget = { x, y, nextPrice };
+            }
+        }
+
+        if (bestTarget) {
+            console.log(`[house-bot] Target selected: (${bestTarget.x}, ${bestTarget.y}) | Profit margin: $${maxProfit.toFixed(2)}`);
+            const currentBal = await contract.userBalances(houseWallet.address);
+            if (currentBal >= ethers.parseUnits(bestTarget.nextPrice.toString(), 6)) {
+                 const tx = await houseContract.setPixel(bestTarget.x, bestTarget.y, 0x111111); // House Bot color signature
+                 console.log(`[house-bot] Defensive Execution Fired! TX: ${tx.hash}`);
+            } else {
+                 console.log(`[house-bot] Insufficient internal execution balance. Please deposit USDC to protocol for: ${houseWallet.address}`);
+            }
+        }
+    } catch(err) {
+        console.error(`[house-bot] Execution error: ${err.message}`);
+    }
+}
+setInterval(runHouseBot, 30000); // Check defenses every 30s
+// -------------------------------------- //
+
 // --- MCP LOGIC ---
 const serverOptions = { name: "agent-canvas-arena", version: "5.3.0" };
 const serverCapabilities = { capabilities: { tools: {} } };

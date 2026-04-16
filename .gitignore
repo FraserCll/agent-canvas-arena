@@ -38,3 +38,7 @@ scripts/check_mainnet_state.mjs
 scripts/check_owner.mjs
 scripts/get_bot_addresses.mjs
 scripts/check_agent_wallets.mjs
+
+# Internal strategy documents
+MARKETING_STORY.md
+project_status_and_strategy.md

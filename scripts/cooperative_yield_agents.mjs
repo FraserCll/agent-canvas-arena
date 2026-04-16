@@ -215,7 +215,7 @@ async function spawnAgent(agentKey, allFriends) {
     const friendAddresses = allFriends.map(f => f.address);
     let cycleCount = 0;
 
-    log("SYSTEM", `Spawning Shark: ${persona.name}...`);
+    log("SYSTEM", `Initializing Agent: ${persona.name}...`);
 
     while (true) {
         try {
@@ -227,7 +227,7 @@ async function spawnAgent(agentKey, allFriends) {
 
             await performMaintenance(persona, wallet, friendAddresses);
             
-            // 1. Pack Vision: Check for Surplus
+            // 1. Syndicate Vision: Check for Surplus
             const canvas = await callTool("read_canvas");
             const bonus = parseFloat(canvas.surplusSurgeBonus || "0");
             
@@ -244,14 +244,14 @@ async function spawnAgent(agentKey, allFriends) {
                     const info = await callTool("get_pixel_info", { x: sx, y: sy });
                     const owner = info.owner ? info.owner.toLowerCase() : null;
 
-                    // THE PACK PACT: Never attack a friend
+                    // SYNDICATE ALLIANCE: Never attack a related endpoint
                     if (friendAddresses.includes(owner)) continue;
 
                     let roi = (parseFloat(info.bounty) + (bonus * 0.1)) / parseFloat(info.nextPrice);
                     
                     // TARGET FOREIGN INTRUDERS
                     if (owner && !friendAddresses.includes(owner)) {
-                        roi *= 5.0; // Aggressively hunt non-pack agents
+                        roi *= 5.0; // Aggressively hunt unaligned agents
                         foreignerFound = true;
                     }
 
@@ -267,14 +267,14 @@ async function spawnAgent(agentKey, allFriends) {
             try {
                 const info = await callTool("get_pixel_info", { x: targetX, y: targetY });
                 if (info.owner && info.owner.toLowerCase() === wallet.address.toLowerCase() && info.secondsRemaining === 0) {
-                    log(persona.name, `🏆 Pack Gain! Claiming reward at (${targetX},${targetY})`);
+                    log(persona.name, `🏆 Syndicate Yield Check! Claiming reward at (${targetX},${targetY})`);
                     const claimIntent = await callTool("claim_reward", { x: targetX, y: targetY });
                     await executeIntent(wallet, claimIntent, persona.name);
                     continue;
                 }
             } catch (e) {}
 
-            log(persona.name, `${foreignerFound ? '🔱 Hunting Intruder' : '🦈 Patrolling'} at (${targetX},${targetY}) ROI: ${bestROI.toFixed(2)}x`);
+            log(persona.name, `${foreignerFound ? '🔱 Overriding Target' : '🦈 Routine Monitor'} at (${targetX},${targetY}) ROI: ${bestROI.toFixed(2)}x`);
             const intent = await callTool("generate_paint_intent", { pixels: [{ x: targetX, y: targetY, color: persona.color }], painter: wallet.address });
             await executeIntent(wallet, intent, persona.name);
 
@@ -285,18 +285,18 @@ async function spawnAgent(agentKey, allFriends) {
                 ? (1200000 + Math.random() * 1200000) 
                 : (2700000 + Math.random() * 4500000); 
 
-            log(persona.name, `Success. Submerging for ${Math.round(sleep/60000)}m. Next strike scheduled.`);
+            log(persona.name, `Success. Entering sleep for ${Math.round(sleep/60000)}m. Next execution scheduled.`);
             await new Promise(r => setTimeout(r, sleep));
 
         } catch (e) {
-            log(persona.name, `Hunt error: ${e.message}. Retreating to deep water (5m)...`);
+            log(persona.name, `Execution error: ${e.message}. Entering fallback delay (5m)...`);
             await new Promise(r => setTimeout(r, 300000));
         }
     }
 }
 
 async function startup() {
-    log("SYSTEM", "--- COLLUDING SHARK PACK INITIALIZED ---");
+    log("SYSTEM", "--- COOPERATIVE SYNDICATE INITIALIZED ---");
     const agentKeys = await loadWallets();
     agentKeys.forEach(key => spawnAgent(key, agentKeys));
 }

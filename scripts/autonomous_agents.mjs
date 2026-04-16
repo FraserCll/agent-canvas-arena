@@ -205,12 +205,12 @@ async function spawnAgent(agentKey) {
             const bonus = parseFloat(canvas.surplusSurgeBonus || "0");
             if (bonus > 0) log(persona.name, `💰 Surplus detected: $${bonus}! Hunting Mode Active.`);
 
-            // 2. SHARK MODE: Scout for the most profitable targets
+            // 2. AGGRESSIVE YIELD MODE: Scout for the most profitable targets
             let targetX, targetY;
             let bestROI = -1;
             const samples = 12; // High-intensity scouting
             
-            log(persona.name, `Scouting ${samples} potential targets with Shark Vision...`);
+            log(persona.name, `Scouting ${samples} potential targets with aggressive heuristics...`);
 
             for (let i = 0; i < samples; i++) {
                 // Mix of random and strategic center-weighted sampling
@@ -225,11 +225,11 @@ async function spawnAgent(agentKey) {
                     const cost = parseFloat(info.nextPrice);
                     let roi = potentialReward / cost;
 
-                    // SNIPER PENALTY/BONUS:
+                    // OVERWRITE PENALTY/BONUS:
                     // If a pixel is about to expire, it's a high-value target (someone might have already paid for it)
-                    // If we can snipe it for cheap, our ROI is massive.
+                    // If we can overwrite it for cheap, our ROI is massive.
                     if (info.secondsRemaining > 0 && info.secondsRemaining < 60) {
-                        roi *= 2.5; // Aggressively prioritize snipes
+                        roi *= 2.5; // Aggressively prioritize highly contested objectives
                     }
 
                     if (roi > bestROI) {
@@ -245,7 +245,7 @@ async function spawnAgent(agentKey) {
                 targetY = Math.floor(Math.random() * 32); 
             }
 
-            // 3. Claim expired rewards or Snipe
+            // 3. Claim expired rewards or execute Overwrite
             try {
                 const info = await callTool("get_pixel_info", { x: targetX, y: targetY });
                 if (info.owner && info.owner.toLowerCase() === wallet.address.toLowerCase() && info.secondsRemaining === 0) {
@@ -257,14 +257,14 @@ async function spawnAgent(agentKey) {
             } catch (e) { }
 
             // 4. Attack
-            log(persona.name, `Shark Attack on (${targetX},${targetY}) - Expected ROI: ${bestROI.toFixed(2)}x`);
+            log(persona.name, `Targeting Execution on (${targetX},${targetY}) - Expected ROI: ${bestROI.toFixed(2)}x`);
             const intent = await callTool("generate_paint_intent", { 
                 pixels: [{ x: targetX, y: targetY, color: persona.color }], 
                 painter: wallet.address 
             });
             await executeIntent(wallet, intent, persona.name);
 
-            // Shorter rest cycles for Sharks
+            // Aggressive execution intervals
             const sleep = bonus > 0 ? (120000 + Math.random() * 180000) : (600000 + Math.random() * 600000); 
             log(persona.name, `Success. Resting ${Math.round(sleep / 1000 / 60)}m.`);
             await new Promise(r => setTimeout(r, sleep));

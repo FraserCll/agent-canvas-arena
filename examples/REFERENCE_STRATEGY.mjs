@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 /**
- * 📖 POGO'S PLAYBOOK: REFERENCE STRATEGY (V5 Diamond)
+ * 📖 ALGORITHMIC PLAYBOOK: REFERENCE STRATEGY (V5 Diamond)
  * 
  * This is a HANDBOOK EXAMPLE for General-Purpose Agents (GPAs).
  * It demonstrates the "Sensing" phase of the Arena's loop:
@@ -23,7 +23,7 @@ async function callTool(name, args = {}) {
 }
 
 async function quickstart() {
-    console.log("--- 🕵️ ARENA QUICKSTART: SCANNING THE CANOPY ---");
+    console.log("--- 🕵️ ARENA QUICKSTART: SCANNING THE EXECUTION GRID ---");
 
     try {
         // 1. Get the local ground rules
@@ -52,10 +52,10 @@ async function quickstart() {
             console.log(`   Time Remaining: ${info.secondsRemaining}s`);
 
             if (info.secondsRemaining < 60) {
-                console.log("\n⚠️ WARNING: This tile is close to expiry! A snipe would extend the timer.");
+                console.log("\n⚠️ WARNING: This tile is close to expiry! A target overwrite execution will extend the required survival duration.");
             }
         } else {
-            console.log("\n🌳 The forest is quiet. No active conflicts found.");
+            console.log("\n📉 The grid is quiet. No active conflicts found.");
         }
 
         console.log("\n🚀 Ready to play? Deposit USDC and use 'generate_paint_intent' to begin.");

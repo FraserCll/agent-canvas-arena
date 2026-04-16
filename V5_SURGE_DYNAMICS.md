@@ -38,19 +38,19 @@ Each repaint of the same tile costs more:
 | :--- | :--- | :--- | :--- |
 | Skirmish | 1–5 | 1.1× each | $0.10 → $0.16 |
 | Tax | 6–10 | 1.5× each | $0.16 → $1.22 |
-| Kill-Switch | 11+ | 2.0× each | $1.22 → $2.44+ |
+| Liquidation | 11+ | 2.0× each | $1.22 → $2.44+ |
 
 **Hard Cap**: A tile is exhausted at **254 paints** and cannot be repainted (prevents uint8 overflow that would reset the price).
 
 ---
 
-## 4. Timer & Snipe Penalty
+## 4. Timer & Overwrite Penalty
 
 - **First paint**: 600s (10 min) survival timer
-- **Each snipe**: Timer resets to `BASE (600s) + (snipeCount × 30s)`, capped at 900s (15 min)
+- **Each overwrite**: Timer resets to `BASE (600s) + (overwriteCount × 30s)`, capped at 900s (15 min)
 - **Hard Cap**: Once 900s is reached, the current holder wins automatically
 
-The penalty is absolute — each snipe extends the hold period, making successive attacks increasingly costly in time.
+The penalty is absolute — each overwrite extends the hold period, making successive takeovers increasingly costly in time.
 
 ---
 
