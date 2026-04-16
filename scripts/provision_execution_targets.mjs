@@ -31,12 +31,12 @@ async function main() {
     const usdcAddr = await contract.usdc();
     const usdc = new ethers.Contract(usdcAddr, erc20Abi, wallet);
 
-    // Ensure we have at least 5 USDC internally to fund the target operations
-    const requiredDeposit = ethers.parseUnits("5", 6);
+    // Ensure we have at least 10 USDC internally to fund the target operations
+    const requiredDeposit = ethers.parseUnits("10", 6);
     const currentBal = await contract.userBalances(wallet.address);
     
     if (currentBal < requiredDeposit) {
-        console.log(`[System] Internal ledger low. Depositing 5 USDC to fund execution targets...`);
+        console.log(`[System] Internal ledger low. Depositing 10 USDC to fund execution targets...`);
         const approveTx = await usdc.approve(contractAddress, requiredDeposit);
         await approveTx.wait();
         const depositTx = await contract.depositUSDC(requiredDeposit);
@@ -44,23 +44,30 @@ async function main() {
         console.log(`[System] Deposit complete.\n`);
     }
 
-    // TARGETS
-    // Provision specific nodes for agent testing protocols
+    // Provision an institutional spread of targets with varied bait levels
     const targets = [
-        { x: 16, y: 16, name: "Alpha Node" },
-        { x: 8, y: 8, name: "Beta Node" }
+        // Alpha Tier (~$1.15 bounties, 0.54 cost)
+        { x: 16, y: 16, name: "Alpha Core (High EV)", paints: 8 },
+        { x: 8, y: 8, name: "Beta Node (High EV)", paints: 8 },
+        // Mid Tier (~$0.55 bounties, 0.16 cost)
+        { x: 16, y: 8, name: "Delta Link (Mid EV)", paints: 5 },
+        { x: 8, y: 16, name: "Echo Link (Mid EV)", paints: 5 },
+        { x: 24, y: 24, name: "Zeta Node (Mid EV)", paints: 5 },
+        // Low Tier (~$0.28 bounties, 0.13 cost)
+        { x: 4, y: 4, name: "Scout 1 (Low EV)", paints: 3 },
+        { x: 28, y: 28, name: "Scout 2 (Low EV)", paints: 3 },
+        { x: 4, y: 28, name: "Scout 3 (Low EV)", paints: 3 },
+        { x: 28, y: 4, name: "Scout 4 (Low EV)", paints: 3 }
     ];
-
-    const TARGET_PAINTS = 8; // 8 sequential paints securely halts below Tier 3 thresholds
 
     for (const target of targets) {
         console.log(`⚙️ Provisioning Target at [${target.x}, ${target.y}] - ${target.name}`);
         
-        let xs = Array(TARGET_PAINTS).fill(target.x);
-        let ys = Array(TARGET_PAINTS).fill(target.y);
-        let colors = Array(TARGET_PAINTS).fill(0x00FF00); // System Green
+        let xs = Array(target.paints).fill(target.x);
+        let ys = Array(target.paints).fill(target.y);
+        let colors = Array(target.paints).fill(0x00FF00); // System Green
         
-        console.log(`   Applying target load...`);
+        console.log(`   Applying target load (${target.paints} actions)...`);
         const tx = await contract.setPixels(xs, ys, colors);
         console.log(`   Tx Submitted! Waiting for network confirmation... (${tx.hash})`);
         await tx.wait();
