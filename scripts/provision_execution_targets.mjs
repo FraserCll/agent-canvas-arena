@@ -31,12 +31,12 @@ async function main() {
     const usdcAddr = await contract.usdc();
     const usdc = new ethers.Contract(usdcAddr, erc20Abi, wallet);
 
-    // Ensure we have at least 30 USDC internally to fund the target operations
-    const requiredDeposit = ethers.parseUnits("30", 6);
+    // Ensure we have at least 5 USDC internally to fund the target operations
+    const requiredDeposit = ethers.parseUnits("5", 6);
     const currentBal = await contract.userBalances(wallet.address);
     
     if (currentBal < requiredDeposit) {
-        console.log(`[System] Internal ledger low. Depositing 30 USDC to fund execution targets...`);
+        console.log(`[System] Internal ledger low. Depositing 5 USDC to fund execution targets...`);
         const approveTx = await usdc.approve(contractAddress, requiredDeposit);
         await approveTx.wait();
         const depositTx = await contract.depositUSDC(requiredDeposit);
@@ -51,7 +51,7 @@ async function main() {
         { x: 8, y: 8, name: "Beta Node" }
     ];
 
-    const TARGET_PAINTS = 12; // 12 sequential paints triggers Tier 3 testing thresholds
+    const TARGET_PAINTS = 8; // 8 sequential paints securely halts below Tier 3 thresholds
 
     for (const target of targets) {
         console.log(`⚙️ Provisioning Target at [${target.x}, ${target.y}] - ${target.name}`);

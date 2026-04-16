@@ -14,6 +14,7 @@ interface PixelData {
   color: number;
   owner: string;
   expiry: number;
+  bounty: number;
   active: boolean;
 }
 
@@ -23,6 +24,7 @@ interface HoveredPixel {
   color: number;
   owner: string;
   secondsLeft: number;
+  bounty: number;
   active: boolean;
 }
 
@@ -61,10 +63,22 @@ export default function ArenaPage() {
         // V5 Diamond packing: [painter:160][color:24][startTime:32][paintCount:8][duration:16][reserved:16]
         const colorInt = Number((val >> BigInt(160)) & BigInt(0xFFFFFF));
         const startTime = Number((val >> BigInt(184)) & BigInt(0xFFFFFFFF));
+        const count = Number((val >> BigInt(216)) & BigInt(0xFF));
         const duration = Number((val >> BigInt(224)) & BigInt(0xFFFF));
         const expiry = startTime + duration;
         const owner = "0x" + (val & BigInt("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")).toString(16).padStart(40, '0');
         if (colorInt !== 0) painted++;
+
+        let bountyMicro = 0n;
+        for (let c = 0; c < count; c++) {
+          let p = 100000n; // 0.10 USDC initial price
+          for (let k = 0; k < c; k++) {
+            if (k < 5) p = (p * 110n) / 100n;
+            else if (k < 10) p = (p * 150n) / 100n;
+            else p = p * 2n;
+          }
+          bountyMicro += (p * 85n) / 100n; // 85% to bounty
+        }
 
         pixels.push({
           x: i % 32,
@@ -72,6 +86,7 @@ export default function ArenaPage() {
           color: colorInt,
           owner,
           expiry,
+          bounty: Number(bountyMicro) / 1000000,
           active: startTime > 0 && expiry > now
         });
       }
@@ -111,6 +126,7 @@ export default function ArenaPage() {
       y: pixel.y,
       color: pixel.color,
       owner: pixel.owner,
+      bounty: pixel.bounty,
       secondsLeft: Math.max(0, pixel.expiry - now),
       active: pixel.active,
     });
@@ -215,6 +231,10 @@ export default function ArenaPage() {
                     <div style={{ width: '1px', height: '14px', background: 'var(--border)' }} />
                     <span className="mono text-[11px]" style={{ color: 'var(--text-secondary)' }}>
                       {truncAddr(hoveredPixel.owner)}
+                    </span>
+                    <div style={{ width: '1px', height: '14px', background: 'var(--border)' }} />
+                    <span className="mono text-[11px] font-semibold" style={{ color: 'var(--text-primary)' }}>
+                      Bounty: ${hoveredPixel.bounty.toFixed(2)}
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
