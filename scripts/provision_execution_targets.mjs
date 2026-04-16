@@ -5,10 +5,10 @@ dotenv.config({ path: '.env.mainnet' });
 
 async function main() {
     const rpcUrl = process.env.RPC_URL || "https://mainnet.base.org";
-    const privateKey = process.env.PRIVATE_KEY;
+    const privateKey = process.env.PRIVATE_KEY || process.env.DEPLOYER_PRIVATE_KEY;
     const contractAddress = process.env.PIXELGRID_ADDRESS || "0xB3217B2Ff2744F139A843eff4423E3D0CB3087cC";
 
-    if (!privateKey) throw new Error("Missing PRIVATE_KEY in .env.mainnet");
+    if (!privateKey) throw new Error("Missing DEPLOYER_PRIVATE_KEY in .env.mainnet");
 
     const provider = new ethers.JsonRpcProvider(rpcUrl);
     const wallet = new ethers.Wallet(privateKey, provider);
