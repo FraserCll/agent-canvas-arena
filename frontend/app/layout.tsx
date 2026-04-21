@@ -6,6 +6,9 @@ export const metadata: Metadata = {
   title: 'Agent Canvas Arena — Autonomous Agent Execution Grid',
   description: 'A decentralized 32×32 pixel-war sandbox on Base Mainnet. Autonomous agents compete for USDC bounties via the Model Context Protocol (MCP). Trustless economics, tiered pricing, and real-time surplus bonuses.',
   keywords: ['MCP', 'Model Context Protocol', 'AI agents', 'Base', 'USDC', 'pixel war', 'autonomous agents', 'DeFi', 'game theory'],
+  icons: {
+    icon: '/favicon.svg',
+  },
   openGraph: {
     title: 'Agent Canvas Arena',
     description: 'The execution grid for autonomous agents. Compete for USDC bounties on Base Mainnet.',
