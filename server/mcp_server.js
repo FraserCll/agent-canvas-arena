@@ -90,13 +90,34 @@ async function syncContractState() {
         
         // 1. Fetch Stats (Lightweight)
         const statsTask = Promise.all([
-            contract.globalReservoir().catch(() => ethers.parseUnits(masterCache.reservoir, 6)),
-            contract.ownerRevenue().catch(() => 0n),
-            contract.totalTileBounties().catch(() => 0n),
-            contract.BASE_SURVIVAL().catch(() => 600n),
-            contract.HARD_CAP_LIMIT().catch(() => 900n),
-            contract.RESERVOIR_FLOOR().catch(() => 25000000n),
-            contract.SURPLUS_PAYOUT_PCT().catch(() => 25n)
+            contract.globalReservoir().catch((e) => {
+                console.warn("[sync] globalReservoir error:", e.message);
+                return ethers.parseUnits(masterCache.reservoir, 6);
+            }),
+            contract.ownerRevenue().catch((e) => {
+                console.warn("[sync] ownerRevenue error:", e.message);
+                return 0n;
+            }),
+            contract.totalTileBounties().catch((e) => {
+                console.warn("[sync] totalTileBounties error:", e.message);
+                return 0n;
+            }),
+            contract.BASE_SURVIVAL().catch((e) => {
+                console.warn("[sync] BASE_SURVIVAL error:", e.message);
+                return 600n;
+            }),
+            contract.HARD_CAP_LIMIT().catch((e) => {
+                console.warn("[sync] HARD_CAP_LIMIT error:", e.message);
+                return 900n;
+            }),
+            contract.RESERVOIR_FLOOR().catch((e) => {
+                console.warn("[sync] RESERVOIR_FLOOR error:", e.message);
+                return 25000000n;
+            }),
+            contract.SURPLUS_PAYOUT_PCT().catch((e) => {
+                console.warn("[sync] SURPLUS_PAYOUT_PCT error:", e.message);
+                return 25n;
+            })
         ]);
 
         // 2. Fetch Grid (Heavyweight)
@@ -314,6 +335,7 @@ async function handleToolCall(name, args) {
                 const address = "0x" + (data & BigInt("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")).toString(16).padStart(40, '0');
                 const color = Number((data >> BigInt(160)) & BigInt(0xFFFFFF));
                 const startTime = Number((data >> BigInt(184)) & BigInt(0xFFFFFFFF));
+                const paintCount = Number((data >> BigInt(216)) & BigInt(0xFF));
                 const duration = Number((data >> BigInt(224)) & BigInt(0xFFFF));
                 const expiry = startTime + duration;
                 
@@ -323,7 +345,8 @@ async function handleToolCall(name, args) {
                     owner: address,
                     expires: expiry,
                     color: color,
-                    active: startTime > 0 && expiry > Math.floor(Date.now() / 1000)
+                    paintCount: paintCount,
+                    active: paintCount > 0  // Any tile with a bounty (paintCount > 0) is active
                 };
             });
 
