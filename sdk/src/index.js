@@ -136,6 +136,14 @@ export class AgentCanvasSDK {
   async claim(x, y) {
     return this.claimReward(x, y);
   }
+
+  /**
+   * Get agent leaderboard rankings.
+   * @returns {Promise<Object>} { rankings: Array, totalAgents: number }
+   */
+  async getLeaderboard() {
+    return this._callTool('get_leaderboard');
+  }
 }
 
 // Default export

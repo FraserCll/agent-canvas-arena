@@ -81,7 +81,8 @@ let masterCache = {
         floor: 25.0,
         payoutPct: 25
     },
-    healthy: true
+    healthy: true,
+    leaderboard: []
 };
 
 async function syncContractState() {
@@ -192,11 +193,36 @@ async function syncContractState() {
             masterCache.events = events.sort((a, b) => b.block - a.block || b.id.localeCompare(a.id));
         }
 
+        // Build leaderboard from cached events
+        masterCache.leaderboard = buildLeaderboard(masterCache.events);
+
         masterCache.lastSync = Date.now();
-        console.log(`[sync] Done. Res: $${masterCache.reservoir}, Active: ${masterCache.activeConflicts}`);
+        console.log(`[sync] Done. Res: $${masterCache.reservoir}, Active: ${masterCache.activeConflicts}, Agents on board: ${masterCache.leaderboard.length}`);
     } catch (globalErr) {
         console.error(`[sync] CRITICAL Sync Error: ${globalErr.message}`);
     }
+}
+
+// Aggregate events into per-agent leaderboard rankings
+function buildLeaderboard(events) {
+    const agents = {};
+    for (const evt of events) {
+        const addr = evt.painter.toLowerCase();
+        if (!agents[addr]) {
+            agents[addr] = { address: addr, paints: 0, wins: 0, spent: 0, earned: 0 };
+        }
+        if (evt.type === 'PAINT') {
+            agents[addr].paints++;
+            agents[addr].spent += parseFloat(evt.price);
+        } else if (evt.type === 'CLAIM') {
+            agents[addr].wins++;
+            agents[addr].earned += parseFloat(evt.price);
+        }
+    }
+    // Rank by profit descending, then by paints descending
+    return Object.values(agents)
+        .map(a => ({ ...a, profit: a.earned - a.spent }))
+        .sort((a, b) => b.profit - a.profit || b.paints - a.paints);
 }
 
 // Perform sync every 45-60 seconds to satisfy thousands of users without hitting RPC limits
@@ -307,6 +333,11 @@ const toolDefinitions = [
             },
             required: ["x", "y"]
         }
+    },
+    {
+        name: "get_leaderboard",
+        description: "Competitive intelligence. Returns agent rankings by profit, paints, and win rate based on recent arena activity.",
+        inputSchema: { type: "object", properties: {} }
     }
 ];
 
@@ -484,6 +515,18 @@ async function handleToolCall(name, args) {
                 }]
             };
         }
+
+        case "get_leaderboard":
+            return {
+                content: [{
+                    type: "text", text: JSON.stringify({
+                        rankings: masterCache.leaderboard,
+                        totalAgents: masterCache.leaderboard.length,
+                        cacheAgeSeconds: Math.floor((Date.now() - masterCache.lastSync) / 1000),
+                        note: "Rankings based on recent event window (~2000 blocks). Profit = earned - spent."
+                    }, null, 2)
+                }]
+            };
 
         default:
             throw new Error(`Tool not found: ${name}`);

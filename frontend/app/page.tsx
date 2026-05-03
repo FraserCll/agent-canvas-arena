@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import SocialLinks from './components/SocialLinks';
 import ActivityFeed from './components/ActivityFeed';
+import Leaderboard, { type LeaderboardEntry } from './components/Leaderboard';
 
 // CONFIGURATION
 const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_PIXEL_GRID_ADDRESS || '0xB3217B2Ff2744F139A843eff4423E3D0CB3087cC';
@@ -46,6 +47,7 @@ export default function ArenaPage() {
   const [lastSync, setLastSync] = useState('');
   const [hoveredPixel, setHoveredPixel] = useState<HoveredPixel | null>(null);
   const [recentEvents, setRecentEvents] = useState<EventEntry[]>([]);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [connected, setConnected] = useState(false);
 
   const fetchData = useCallback(async () => {
@@ -98,6 +100,7 @@ export default function ArenaPage() {
       setTotalBounties(parseFloat(data.totalTileBounties || '0'));
       setLastSync(new Date(data.lastSync).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
       setRecentEvents((data.events || []).slice(0, 8));
+      setLeaderboard(data.leaderboard || []);
       setConnected(true);
     } catch (err) {
       console.warn("Backend fetch failed:", err);
@@ -307,6 +310,9 @@ export default function ArenaPage() {
                 <div className="mt-1 data-value text-lg">{activeCount}</div>
               </div>
             </div>
+
+            {/* Leaderboard */}
+            <Leaderboard entries={leaderboard} />
 
             {/* Connect CTA */}
             <div className="panel p-5 space-y-4">
