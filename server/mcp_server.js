@@ -28,6 +28,7 @@ dotenv.config();
 const contractAddress = process.env.PIXELGRID_ADDRESS || process.env.CONTRACT_ADDRESS || "0xB3217B2Ff2744F139A843eff4423E3D0CB3087cC";
 const RPC_URLS = [
     process.env.RPC_URL,
+    process.env.ALCHEMY_API_KEY ? `https://base-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}` : null,
     "https://developer-access-mainnet.base.org",
     "https://1rpc.io/base",
     "https://mainnet.base.org"
@@ -157,6 +158,57 @@ async function syncContractState() {
         if (rawGrid) {
             masterCache.grid = Array.from(rawGrid).map(val => val.toString());
             masterCache.activeConflicts = masterCache.grid.filter(val => val !== "0").length;
+        } else {
+            // Fallback: getGrid() failed (RPC rate limit). Reconstruct grid from event data.
+            // Use events to determine which tiles are painted, then query getPixelInfo for those tiles.
+            const dirtyTiles = new Set();
+            for (const evt of events) {
+                if (evt.type === 'PAINT') {
+                    dirtyTiles.add(parseInt(evt.tileIndex));
+                }
+            }
+            // Also check any tiles already in the cache
+            for (let i = 0; i < masterCache.grid.length; i++) {
+                if (masterCache.grid[i] !== "0") dirtyTiles.add(i);
+            }
+            
+            if (dirtyTiles.size > 0) {
+                console.log(`[sync] Grid fallback: querying ${dirtyTiles.size} tiles individually...`);
+                const newGrid = new Array(1024).fill("0");
+                let queried = 0;
+                for (const idx of dirtyTiles) {
+                    try {
+                        const x = idx % 32;
+                        const y = Math.floor(idx / 32);
+                        const info = await contract.getPixelInfo(x, y);
+                        const owner = info[0];
+                        const color = info[1]; // actually startTime... need to check ABI
+                        // The contract's getPixelInfo returns: (address owner, uint32 startTime, uint256 bounty, uint256 nextPrice, uint256 paintCount, uint8 tier)
+                        // We need the full packed value for the grid. Let's use a simplified approach:
+                        // Build a packed value from the info we have
+                        const ownerInt = BigInt(owner);
+                        // Use the cached color if this tile was previously painted, otherwise default to white
+                        const cachedVal = masterCache.grid[idx] !== "0" ? BigInt(masterCache.grid[idx]) : 0n;
+                        const prevColor = (cachedVal >> 160n) & 0xFFFFFFn;
+                        const colorVal = prevColor !== 0n ? prevColor : 0xFFFFFFn; // default white
+                        const startTime = BigInt(info[1]);
+                        const paintCount = BigInt(info[4]);
+                        const duration = 600n + (paintCount > 0n ? (paintCount - 1n) * 30n : 0n);
+                        const cappedDuration = duration > 900n ? 900n : duration;
+                        
+                        // Pack: [painter:160][color:24][startTime:32][paintCount:8][duration:16][reserved:16]
+                        const packed = ownerInt | (colorVal << 160n) | (startTime << 184n) | (paintCount << 216n) | (cappedDuration << 224n);
+                        newGrid[idx] = packed.toString();
+                        queried++;
+                    } catch(e) {
+                        // Keep old value
+                        newGrid[idx] = masterCache.grid[idx];
+                    }
+                }
+                masterCache.grid = newGrid;
+                masterCache.activeConflicts = masterCache.grid.filter(val => val !== "0").length;
+                console.log(`[sync] Grid fallback complete: ${queried}/${dirtyTiles.size} tiles, ${masterCache.activeConflicts} active`);
+            }
         }
 
         const events = [];
