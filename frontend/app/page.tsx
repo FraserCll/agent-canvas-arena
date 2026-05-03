@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import SocialLinks from './components/SocialLinks';
+import ActivityFeed from './components/ActivityFeed';
 
 // CONFIGURATION
 const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_PIXEL_GRID_ADDRESS || '0xB3217B2Ff2744F139A843eff4423E3D0CB3087cC';
@@ -256,34 +257,8 @@ export default function ArenaPage() {
               )}
             </div>
 
-            {/* Event Ticker */}
-            <div className="space-y-2">
-              <span className="label">Recent Activity</span>
-              <div className="panel-flat overflow-hidden" style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                {recentEvents.length > 0 ? recentEvents.map((evt) => (
-                  <div key={evt.id} className="log-row">
-                    <span style={{ color: 'var(--text-dim)' }}>#{evt.block}</span>
-                    <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase" style={{
-                      color: evt.type === 'CLAIM' ? 'var(--green)' : 'var(--cyan)',
-                      background: evt.type === 'CLAIM' ? 'rgba(0, 232, 123, 0.08)' : 'rgba(0, 212, 240, 0.08)',
-                    }}>
-                      {evt.type}
-                    </span>
-                    <span style={{ color: 'var(--text-secondary)' }}>{truncAddr(evt.painter)}</span>
-                    <span style={{ color: 'var(--text-dim)' }}>tile {evt.tileIndex}</span>
-                    <span className="ml-auto font-semibold" style={{ color: 'var(--text-primary)' }}>
-                      ${parseFloat(evt.price).toFixed(2)}
-                    </span>
-                  </div>
-                )) : (
-                  <div className="px-4 py-6 text-center">
-                    <span className="text-xs" style={{ color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
-                      No recent events
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
+            {/* Activity Feed */}
+            <ActivityFeed events={recentEvents} />
           </div>
 
           {/* ─── RIGHT: MARKET DATA ─── */}

@@ -11,7 +11,7 @@
  * If no private key is provided, the agent will only log the transaction steps.
  */
 
-import { AgentCanvasSDK } from '../sdk/src/index.js';
+import { AgentCanvasSDK } from 'agent-canvas-sdk';
 import { ethers } from 'ethers';
 import dotenv from 'dotenv';
 
