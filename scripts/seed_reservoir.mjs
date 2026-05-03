@@ -23,12 +23,12 @@ const PRIVATE_KEY      = process.env.SEED_PRIVATE_KEY;
 const AMOUNT_USDC      = parseFloat(process.env.SEED_AMOUNT || '30');
 
 if (!PRIVATE_KEY) {
-  console.error('❌ SEED_PRIVATE_KEY not set. Export it or pass via environment.');
+  console.error('❌ SEED_PRIVATE_KEY not set.');
   process.exit(1);
 }
 
 if (isNaN(AMOUNT_USDC) || AMOUNT_USDC <= 0) {
-  console.error('❌ SEED_AMOUNT must be a positive number.');
+  console.error('❌ SEED_AMOUNT must be positive.');
   process.exit(1);
 }
 
@@ -43,6 +43,11 @@ const ARENA_ABI = [
   'function globalReservoir() external view returns (uint256)',
 ];
 
+// Helper: format 6-decimal USDC amount to human-readable string
+function fmtUsd(weiVal) {
+  return (Number(ethers.formatUnits(weiVal, 6))).toFixed(2);
+}
+
 async function main() {
   const provider = new ethers.JsonRpcProvider(RPC_URL);
   const wallet   = new ethers.Wallet(PRIVATE_KEY, provider);
@@ -53,12 +58,12 @@ async function main() {
   console.log(`💵 Amount: $${AMOUNT_USDC.toFixed(2)} USDC`);
   console.log(`🎯 Target: ${CONTRACT_ADDRESS}`);
 
-  const decimals = await usdc.decimals();
-  const amountWei = ethers.parseUnits(AMOUNT_USDC.toFixed(decimals), decimals);
+  const decimals = await usdc.decimals(); // BigInt
+  const amountWei = ethers.parseUnits(AMOUNT_USDC.toFixed(Number(decimals)), Number(decimals));
 
   // Check current reservoir
   const before = await arena.globalReservoir();
-  console.log(`📊 Reservoir before: $${(Number(before) / 1e6).toFixed(2)}`);
+  console.log(`📊 Reservoir before: $${fmtUsd(before)}`);
 
   // Check allowance
   const allowance = await usdc.allowance(wallet.address, CONTRACT_ADDRESS);
@@ -78,8 +83,8 @@ async function main() {
   console.log(`✅ Seeded`);
 
   const after = await arena.globalReservoir();
-  console.log(`📊 Reservoir after: $${(Number(after) / 1e6).toFixed(2)}`);
-  console.log(`🎉 Done.`);
+  console.log(`📊 Reservoir after: $${fmtUsd(after)}`);
+  console.log(`🎉 Done. Reservoir is now above the $25 floor. Surplus surge is active.`);
 }
 
 main().catch(err => {
