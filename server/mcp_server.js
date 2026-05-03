@@ -603,6 +603,54 @@ async function runHouseBot() {
     }
 }
 setInterval(runHouseBot, 30000); // Check defenses every 30s
+
+// --- DEMO AGENT (CASUAL PAINTER) --- //
+// Paints a random tile every 2-6 hours to create baseline grid activity.
+// Activated when DEMO_PRIVATE_KEY is set (uses same wallet as house bot if needed).
+const DEMO_COLORS = [0xFF0000, 0x00FF00, 0x0000FF, 0xFFFF00, 0xFF00FF, 0x00FFFF];
+
+function getDemoInterval() {
+    const min = 2 * 60 * 60 * 1000;  // 2 hours
+    const max = 6 * 60 * 60 * 1000;  // 6 hours
+    return Math.floor(Math.random() * (max - min)) + min;
+}
+
+async function runDemoCycle() {
+    if (!process.env.DEMO_PRIVATE_KEY) {
+        // Schedule next check even if not activated (may be activated later)
+        setTimeout(runDemoCycle, 60 * 60 * 1000);
+        return;
+    }
+    try {
+        const wallet = new ethers.Wallet(process.env.DEMO_PRIVATE_KEY, provider);
+        const signedContract = new ethers.Contract(contractAddress, abi, wallet);
+        
+        const balance = await contract.userBalances(wallet.address);
+        if (balance < ethers.parseUnits("0.11", 6)) {
+            console.log(`[demo-agent] Balance too low ($${ethers.formatUnits(balance, 6)}). Skipping cycle.`);
+        } else {
+            const x = Math.floor(Math.random() * 32);
+            const y = Math.floor(Math.random() * 32);
+            const color = DEMO_COLORS[Math.floor(Math.random() * DEMO_COLORS.length)];
+            const colorHex = '#' + color.toString(16).padStart(6, '0');
+            
+            console.log(`[demo-agent] Painting (${x}, ${y}) ${colorHex}...`);
+            const tx = await signedContract.setPixel(x, y, color);
+            console.log(`[demo-agent] TX: ${tx.hash}`);
+            await tx.wait();
+            console.log(`[demo-agent] Confirmed.`);
+        }
+    } catch(err) {
+        console.error(`[demo-agent] Error: ${err.shortMessage || err.message}`);
+    }
+    // Schedule next run at random 2-6h interval
+    const delay = getDemoInterval();
+    console.log(`[demo-agent] Next paint in ~${(delay / 3600000).toFixed(1)}h`);
+    setTimeout(runDemoCycle, delay);
+}
+
+// Start the demo agent cycle (will self-schedule)
+runDemoCycle();
 // -------------------------------------- //
 
 // --- MCP LOGIC ---
