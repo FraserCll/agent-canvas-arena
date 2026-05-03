@@ -180,24 +180,17 @@ async function syncContractState() {
                     try {
                         const x = idx % 32;
                         const y = Math.floor(idx / 32);
+                        // Contract returns: (address painter, uint32 color, uint256 expiry, uint256 nextPrice, uint256 currentBounty, uint8 paintCount)
                         const info = await contract.getPixelInfo(x, y);
-                        const owner = info[0];
-                        const color = info[1]; // actually startTime... need to check ABI
-                        // The contract's getPixelInfo returns: (address owner, uint32 startTime, uint256 bounty, uint256 nextPrice, uint256 paintCount, uint8 tier)
-                        // We need the full packed value for the grid. Let's use a simplified approach:
-                        // Build a packed value from the info we have
-                        const ownerInt = BigInt(owner);
-                        // Use the cached color if this tile was previously painted, otherwise default to white
-                        const cachedVal = masterCache.grid[idx] !== "0" ? BigInt(masterCache.grid[idx]) : 0n;
-                        const prevColor = (cachedVal >> 160n) & 0xFFFFFFn;
-                        const colorVal = prevColor !== 0n ? prevColor : 0xFFFFFFn; // default white
-                        const startTime = BigInt(info[1]);
-                        const paintCount = BigInt(info[4]);
-                        const duration = 600n + (paintCount > 0n ? (paintCount - 1n) * 30n : 0n);
-                        const cappedDuration = duration > 900n ? 900n : duration;
+                        const painter = BigInt(info[0]);
+                        const color = BigInt(info[1]) & 0xFFFFFFn;
+                        const expiry = Number(info[2]);
+                        const paintCount = Number(info[5]);
+                        const duration = Math.min(900, 600 + (paintCount > 0 ? (paintCount - 1) * 30 : 0));
+                        const startTime = Math.max(0, expiry - duration);
                         
                         // Pack: [painter:160][color:24][startTime:32][paintCount:8][duration:16][reserved:16]
-                        const packed = ownerInt | (colorVal << 160n) | (startTime << 184n) | (paintCount << 216n) | (cappedDuration << 224n);
+                        const packed = painter | (color << 160n) | (BigInt(startTime) << 184n) | (BigInt(paintCount) << 216n) | (BigInt(duration) << 224n);
                         newGrid[idx] = packed.toString();
                         queried++;
                     } catch(e) {
@@ -677,6 +670,36 @@ async function runDemoCycle() {
         const wallet = new ethers.Wallet(process.env.DEMO_PRIVATE_KEY, provider);
         const signedContract = new ethers.Contract(contractAddress, abi, wallet);
         
+        // 1. Claim any expired tiles we own (replenish balance)
+        const now = Math.floor(Date.now() / 1000);
+        const ownedExpired = [];
+        for (let i = 0; i < masterCache.grid.length; i++) {
+            const val = masterCache.grid[i];
+            if (val === "0") continue;
+            const data = BigInt(val);
+            const owner = "0x" + (data & BigInt("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")).toString(16).padStart(40, '0');
+            if (owner.toLowerCase() === wallet.address.toLowerCase()) {
+                const startTime = Number((data >> BigInt(184)) & BigInt(0xFFFFFFFF));
+                const duration = Number((data >> BigInt(224)) & BigInt(0xFFFF));
+                const expiry = startTime + duration;
+                if (startTime > 0 && expiry < now) {
+                    ownedExpired.push({ idx: i, x: i % 32, y: Math.floor(i / 32) });
+                }
+            }
+        }
+        for (const tile of ownedExpired) {
+            try {
+                console.log(`[demo-agent] Claiming expired tile (${tile.x}, ${tile.y})...`);
+                const tx = await signedContract.claimReward(tile.x, tile.y);
+                console.log(`[demo-agent] Claim TX: ${tx.hash}`);
+                await tx.wait();
+                console.log(`[demo-agent] Claimed!`);
+            } catch(e) {
+                // Already claimed or still pending
+            }
+        }
+
+        // 2. Paint a random tile
         const balance = await contract.userBalances(wallet.address);
         if (balance < ethers.parseUnits("0.11", 6)) {
             console.log(`[demo-agent] Balance too low ($${ethers.formatUnits(balance, 6)}). Skipping cycle.`);
