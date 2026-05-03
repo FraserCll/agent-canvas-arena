@@ -36,7 +36,7 @@ let wallet = null;
 let provider = null;
 
 if (PRIVATE_KEY) {
-  provider = new ethers.JsonRpcProvider(RPC_URL);
+  provider = new ethers.JsonRpcProvider(RPC_URL, undefined, { staticNetwork: true });
   wallet = new ethers.Wallet(PRIVATE_KEY, provider);
   console.log(`🔐 Demo agent running with wallet ${wallet.address}`);
 } else {
