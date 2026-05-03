@@ -160,6 +160,13 @@ async function runCycle() {
   log(`--- Waiting for next cycle (1 hour) ---\n`);
 }
 
+function getNextIntervalMs() {
+  // Random interval between 2-6 hours (looks more organic than a fixed clock)
+  const minMs = 2 * 60 * 60 * 1000;  // 2 hours
+  const maxMs = 6 * 60 * 60 * 1000;  // 6 hours
+  return Math.floor(Math.random() * (maxMs - minMs)) + minMs;
+}
+
 // Main
 (async () => {
   log(`🚀 Agent Canvas Arena Demo Agent started.`);
@@ -170,7 +177,13 @@ async function runCycle() {
     if (bal !== null) log(`Initial internal balance: $${bal.toFixed(2)} USDC`);
   }
 
-  // Run immediately, then every hour
-  await runCycle();
-  setInterval(runCycle, 60 * 60 * 1000);
+  // Run immediately, then schedule with random 2-6h intervals
+  async function scheduleNext() {
+    await runCycle();
+    const delay = getNextIntervalMs();
+    const hours = (delay / (60 * 60 * 1000)).toFixed(1);
+    log(`⏰ Next paint in ~${hours}h`);
+    setTimeout(scheduleNext, delay);
+  }
+  await scheduleNext();
 })();
